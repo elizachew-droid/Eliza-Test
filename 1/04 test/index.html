@@ -16,6 +16,15 @@
       --accent: #7c6aff;
     }
 
+    :root.light {
+      --bg: #f9f9f9;
+      --surface: #ffffff;
+      --border: #e0e0e0;
+      --text: #111111;
+      --muted: #666;
+      --accent: #7c6aff;
+    }
+
     body {
       background: var(--bg);
       color: var(--text);
@@ -25,7 +34,26 @@
       max-width: 600px;
       margin: 0 auto;
       padding: 80px 24px 120px;
+      transition: background 0.2s, color 0.2s;
     }
+
+    /* — Theme toggle — */
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 6px 12px;
+      color: var(--text);
+      transition: background 0.2s, border-color 0.2s;
+      z-index: 100;
+    }
+
+    .theme-toggle:hover { border-color: var(--accent); }
 
     /* — Hero — */
     .hero {
@@ -152,6 +180,8 @@
 </head>
 <body>
 
+  <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+
   <!-- Hero -->
   <div class="hero">
     <!-- Replace src with your actual photo -->
@@ -224,6 +254,20 @@
       btn.disabled = true;
       e.target.reset();
       setTimeout(() => { btn.textContent = 'Send message'; btn.disabled = false; }, 3000);
+    }
+
+    const toggle = document.querySelector('.theme-toggle');
+
+    function toggleTheme() {
+      const isLight = document.documentElement.classList.toggle('light');
+      toggle.textContent = isLight ? '☀️' : '🌙';
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    }
+
+    // Restore saved preference
+    if (localStorage.getItem('theme') === 'light') {
+      document.documentElement.classList.add('light');
+      toggle.textContent = '☀️';
     }
   </script>
 
