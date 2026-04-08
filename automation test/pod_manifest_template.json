@@ -1,0 +1,188 @@
+{
+  "_comment_top": [
+    "pod_manifest_template.json",
+    "────────────────────────────────────────────────────────────────────",
+    "This file defines the territory / pod assignment rules consumed by",
+    "assign_territories.py.  Rules are evaluated in ascending priority",
+    "order — the FIRST matching rule wins.  Delete any example rules you",
+    "do not need and add your own following the same structure.",
+    "────────────────────────────────────────────────────────────────────"
+  ],
+
+  "version": "1.0.0",
+
+  "metadata": {
+    "_comment": "Human-readable labels; not used by the script but useful for auditing.",
+    "owner":        "YOUR_NAME_OR_TEAM",
+    "last_updated": "YYYY-MM-DD",
+    "description":  "Territory and pod assignment rules for FY2025"
+  },
+
+  "defaults": {
+    "_comment": "Values applied when a matching rule omits a field. Leave blank to make no change.",
+    "territory":    "",
+    "pod":          "",
+    "segment":      "",
+    "region":       "",
+    "account_tier": ""
+  },
+
+  "segments": {
+    "_comment": "Reference list of valid segment values — keep in sync with your Salesforce picklist.",
+    "values": ["SMB", "Mid-Market", "Enterprise", "Strategic"]
+  },
+
+  "pods": {
+    "_comment": "Reference list of valid pod names — keep in sync with your Salesforce picklist.",
+    "values": ["Pod-East-1", "Pod-East-2", "Pod-West-1", "Pod-West-2", "Pod-EMEA-1", "Pod-APAC-1"]
+  },
+
+  "territory_rules": [
+
+    {
+      "_comment": "RULE 1 — Strategic Enterprise: large US companies. Highest priority.",
+
+      "priority": 1,
+
+      "territory":    "US-Strategic",
+      "pod":          "Pod-East-1",
+      "segment":      "Strategic",
+      "region":       "North America",
+      "account_tier": "Tier-1",
+
+      "conditions": {
+        "_comment_conditions": [
+          "All conditions in this object must be satisfied for the rule to match.",
+          "Omit any condition key you do not need.",
+          "",
+          "Supported condition keys:",
+          "  BillingCountry  — string or [list of strings]",
+          "  BillingState    — string or [list of strings]",
+          "  Industry        — string or [list of strings]",
+          "  Type            — string or [list of strings]  (Salesforce Account Type picklist)",
+          "  AnnualRevenue   — { min: NUMBER, max: NUMBER }  (in USD)",
+          "  NumberOfEmployees — { min: NUMBER, max: NUMBER }"
+        ],
+
+        "BillingCountry": "US",
+        "AnnualRevenue":  { "min": 100000000, "max": 999999999999 },
+        "NumberOfEmployees": { "min": 1000, "max": 9999999 }
+      }
+    },
+
+    {
+      "_comment": "RULE 2 — Enterprise: mid-large US companies.",
+
+      "priority": 2,
+
+      "territory":    "US-Enterprise-East",
+      "pod":          "Pod-East-2",
+      "segment":      "Enterprise",
+      "region":       "North America",
+      "account_tier": "Tier-2",
+
+      "conditions": {
+        "BillingCountry": ["US", "CA"],
+        "BillingState":   ["NY", "MA", "PA", "NJ", "CT", "MD", "VA", "FL"],
+        "AnnualRevenue":  { "min": 10000000, "max": 99999999 }
+      }
+    },
+
+    {
+      "_comment": "RULE 3 — Enterprise West: mid-large US West Coast companies.",
+
+      "priority": 3,
+
+      "territory":    "US-Enterprise-West",
+      "pod":          "Pod-West-1",
+      "segment":      "Enterprise",
+      "region":       "North America",
+      "account_tier": "Tier-2",
+
+      "conditions": {
+        "BillingCountry": ["US"],
+        "BillingState":   ["CA", "WA", "OR", "NV", "AZ", "CO", "TX"],
+        "AnnualRevenue":  { "min": 10000000, "max": 99999999 }
+      }
+    },
+
+    {
+      "_comment": "RULE 4 — EMEA: European and Middle-Eastern accounts.",
+
+      "priority": 4,
+
+      "territory":    "EMEA",
+      "pod":          "Pod-EMEA-1",
+      "segment":      "Enterprise",
+      "region":       "EMEA",
+      "account_tier": "Tier-2",
+
+      "conditions": {
+        "BillingCountry": [
+          "GB", "DE", "FR", "NL", "SE", "NO", "DK", "FI",
+          "ES", "IT", "CH", "AT", "BE", "IE", "AE", "IL"
+        ]
+      }
+    },
+
+    {
+      "_comment": "RULE 5 — APAC: Asia-Pacific accounts.",
+
+      "priority": 5,
+
+      "territory":    "APAC",
+      "pod":          "Pod-APAC-1",
+      "segment":      "Mid-Market",
+      "region":       "APAC",
+      "account_tier": "Tier-3",
+
+      "conditions": {
+        "BillingCountry": [
+          "AU", "NZ", "SG", "JP", "KR", "IN", "HK", "TW", "TH", "MY", "PH"
+        ]
+      }
+    },
+
+    {
+      "_comment": "RULE 6 — Mid-Market US: companies with 50–999 employees.",
+
+      "priority": 6,
+
+      "territory":    "US-Mid-Market",
+      "pod":          "Pod-West-2",
+      "segment":      "Mid-Market",
+      "region":       "North America",
+      "account_tier": "Tier-3",
+
+      "conditions": {
+        "BillingCountry":     ["US", "CA"],
+        "NumberOfEmployees":  { "min": 50, "max": 999 }
+      }
+    },
+
+    {
+      "_comment": "RULE 7 — SMB: small US businesses. Lowest priority catch-all for North America.",
+
+      "priority": 7,
+
+      "territory":    "US-SMB",
+      "pod":          "Pod-West-2",
+      "segment":      "SMB",
+      "region":       "North America",
+      "account_tier": "Tier-4",
+
+      "conditions": {
+        "BillingCountry":     ["US", "CA"],
+        "NumberOfEmployees":  { "min": 1, "max": 49 }
+      }
+    }
+
+  ],
+
+  "_comment_extending": [
+    "To add a new rule, copy an existing rule block, adjust the priority",
+    "so it slots in the right position, then update territory/pod/segment",
+    "and the conditions.  Re-run assign_territories.py --dry-run to",
+    "preview before any changes are written to Salesforce."
+  ]
+}
