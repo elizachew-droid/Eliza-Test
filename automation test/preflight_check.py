@@ -20,6 +20,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from sf_auth import get_salesforce_client  # noqa: E402 (after load_dotenv)
+
 # ---------------------------------------------------------------------------
 # Field manifest — every API name the scripts touch, grouped by SObject.
 # Update this dict whenever you add or remove a field reference in any script.
@@ -87,59 +89,7 @@ def setup_logging(verbose: bool) -> None:
     )
 
 
-def get_salesforce_client():
-    """Return an authenticated simple_salesforce Salesforce instance."""
-    try:
-        from simple_salesforce import Salesforce, SalesforceAuthenticationFailed
-    except ImportError:
-        logging.error(
-            "simple_salesforce is not installed. Run: pip install -r requirements.txt"
-        )
-        sys.exit(1)
-
-    instance_url = os.getenv("SF_INSTANCE_URL", "")
-    username = os.getenv("SF_USERNAME", "")
-    password = os.getenv("SF_PASSWORD", "")
-    security_token = os.getenv("SF_SECURITY_TOKEN", "")
-    client_id = os.getenv("SF_CLIENT_ID", "")
-    client_secret = os.getenv("SF_CLIENT_SECRET", "")
-    api_version = os.getenv("SF_API_VERSION", "59.0")
-
-    missing = [
-        name
-        for name, val in {
-            "SF_INSTANCE_URL": instance_url,
-            "SF_USERNAME": username,
-            "SF_PASSWORD": password,
-        }.items()
-        if not val
-    ]
-    if missing:
-        logging.error(
-            "Missing required environment variables: %s\n"
-            "Fill in your .env file and try again.",
-            ", ".join(missing),
-        )
-        sys.exit(1)
-
-    domain = "test" if "sandbox" in instance_url.lower() or "test.salesforce" in instance_url.lower() else "login"
-
-    try:
-        logging.info("Authenticating with Salesforce (%s)…", instance_url)
-        sf = Salesforce(
-            username=username,
-            password=password,
-            security_token=security_token,
-            consumer_key=client_id or None,
-            consumer_secret=client_secret or None,
-            domain=domain,
-            version=api_version,
-        )
-        logging.info("Authentication successful.")
-        return sf
-    except SalesforceAuthenticationFailed as exc:
-        logging.error("Salesforce authentication failed: %s", exc)
-        sys.exit(1)
+# get_salesforce_client is imported from sf_auth
 
 
 def get_object_fields(sf, sobject_name: str) -> set[str]:

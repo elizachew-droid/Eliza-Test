@@ -38,6 +38,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from sf_auth import get_salesforce_client  # noqa: E402
+
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -82,41 +84,7 @@ def setup_logging(level_name: str) -> None:
 # Salesforce helpers
 # ---------------------------------------------------------------------------
 
-def get_salesforce_client():
-    try:
-        from simple_salesforce import Salesforce, SalesforceAuthenticationFailed
-    except ImportError:
-        logging.error("simple_salesforce not installed. Run: pip install -r requirements.txt")
-        sys.exit(1)
-
-    username = os.getenv("SF_USERNAME", "")
-    password = os.getenv("SF_PASSWORD", "")
-    security_token = os.getenv("SF_SECURITY_TOKEN", "")
-    instance_url = os.getenv("SF_INSTANCE_URL", "")
-    client_id = os.getenv("SF_CLIENT_ID", "")
-    client_secret = os.getenv("SF_CLIENT_SECRET", "")
-    api_version = os.getenv("SF_API_VERSION", "59.0")
-
-    for name, val in {"SF_USERNAME": username, "SF_PASSWORD": password, "SF_INSTANCE_URL": instance_url}.items():
-        if not val:
-            logging.error("Missing required env var: %s", name)
-            sys.exit(1)
-
-    domain = "test" if "test.salesforce" in instance_url.lower() else "login"
-
-    try:
-        return Salesforce(
-            username=username,
-            password=password,
-            security_token=security_token,
-            consumer_key=client_id or None,
-            consumer_secret=client_secret or None,
-            domain=domain,
-            version=api_version,
-        )
-    except SalesforceAuthenticationFailed as exc:
-        logging.error("Salesforce auth failed: %s", exc)
-        sys.exit(1)
+# get_salesforce_client is imported from sf_auth
 
 
 def fetch_accounts(sf, segment_filter: str | None) -> list[dict]:
