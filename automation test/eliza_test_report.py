@@ -7,11 +7,14 @@ Builds the "Eliza Test" report:
   - Sub-vertical contains 'gift card' (case-insensitive)
   - Columns: Account Name, Account Owner, Annual Revenue, PSP, Sub-Vertical
 
-Run discovery mode first to confirm field API names:
+Step 1 — inspect the existing SF report to get exact field names:
+    python eliza_test_report.py --inspect-report 00OVk00000KYxtNMAT
+
+Step 2 — discover all vertical/psp fields on the Account object:
     python eliza_test_report.py --discover
 
-Then run the full report:
-    python eliza_test_report.py
+Step 3 — run the report (set correct field names via flags or .env):
+    python eliza_test_report.py --sub-vertical-field Sub_Vertical__c --psp-field PSP__c
     python eliza_test_report.py --output-csv ./output/eliza_test.csv
 """
 
@@ -63,6 +66,66 @@ def discover_fields(sf) -> dict[str, list[tuple[str, str]]]:
         matches[category] = hits
 
     return matches
+
+
+# ---------------------------------------------------------------------------
+# Inspect an existing Salesforce report via the Analytics API
+# ---------------------------------------------------------------------------
+
+def inspect_sf_report(sf, report_id: str) -> None:
+    """
+    Fetch the metadata of an existing Salesforce report and print
+    every field API name it uses — tells us exactly what to query.
+    """
+    logging.info("Fetching report metadata for %s …", report_id)
+    try:
+        url = f"{sf.base_url}analytics/reports/{report_id}/describe"
+        resp = sf.session.get(url, headers={"Authorization": f"Bearer {sf.session_id}"})
+        if resp.status_code != 200:
+            logging.error("Analytics API returned %s: %s", resp.status_code, resp.text[:500])
+            sys.exit(1)
+        meta = resp.json()
+    except Exception as exc:
+        logging.error("Failed to fetch report metadata: %s", exc)
+        sys.exit(1)
+
+    report_meta = meta.get("reportMetadata", {})
+    detail_columns = report_meta.get("detailColumns", [])
+    filters = report_meta.get("reportFilters", [])
+    groupings_down = report_meta.get("groupingsDown", {}).get("groupings", [])
+    report_type = report_meta.get("reportType", {})
+    report_filters_scope = report_meta.get("scope", "")
+
+    # Extended metadata — human-readable labels for each column
+    ext_meta = meta.get("reportExtendedMetadata", {})
+    detail_col_info = ext_meta.get("detailColumnInfo", {})
+
+    print("\n" + "=" * 70)
+    print(f"EXISTING REPORT METADATA — {report_id}")
+    print("=" * 70)
+    print(f"\n  Report type : {report_type.get('type', '—')} / {report_type.get('label', '—')}")
+    print(f"  Scope       : {report_filters_scope}")
+
+    print(f"\n  COLUMNS ({len(detail_columns)}):")
+    for col in detail_columns:
+        info = detail_col_info.get(col, {})
+        label = info.get("label", "")
+        dtype = info.get("dataType", "")
+        print(f"    {col:<50} {label:<35} [{dtype}]")
+
+    if groupings_down:
+        print(f"\n  GROUPINGS:")
+        for g in groupings_down:
+            print(f"    {g.get('name')} ({g.get('label')})")
+
+    if filters:
+        print(f"\n  FILTERS ({len(filters)}):")
+        for f in filters:
+            print(f"    {f.get('column'):<40} {f.get('operator'):<15} {f.get('value')}")
+
+    print()
+    print("Use the column API names above with --sub-vertical-field and --psp-field.")
+    print()
 
 
 def print_discovery(matches: dict[str, list[tuple[str, str]]]) -> None:
@@ -166,6 +229,11 @@ def main() -> None:
         description='Generate the "Eliza Test" NORAM gift card accounts report.'
     )
     parser.add_argument(
+        "--inspect-report",
+        metavar="REPORT_ID",
+        help="Fetch metadata from an existing SF report to see its exact field API names.",
+    )
+    parser.add_argument(
         "--discover",
         action="store_true",
         help="Show all Account fields matching 'vertical', 'psp', 'region' — use this first.",
@@ -189,6 +257,10 @@ def main() -> None:
     args = parser.parse_args()
 
     sf = get_salesforce_client()
+
+    if args.inspect_report:
+        inspect_sf_report(sf, args.inspect_report)
+        return
 
     if args.discover:
         matches = discover_fields(sf)
