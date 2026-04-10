@@ -92,7 +92,8 @@ def inspect_sf_report(sf, report_id: str) -> None:
     report_meta = meta.get("reportMetadata", {})
     detail_columns = report_meta.get("detailColumns", [])
     filters = report_meta.get("reportFilters", [])
-    groupings_down = report_meta.get("groupingsDown", {}).get("groupings", [])
+    groupings_raw = report_meta.get("groupingsDown", [])
+    groupings_down = groupings_raw if isinstance(groupings_raw, list) else groupings_raw.get("groupings", [])
     report_type = report_meta.get("reportType", {})
     report_filters_scope = report_meta.get("scope", "")
 
