@@ -71,50 +71,130 @@ TIER_COLOUR = {"Gold": "#F0B429", "Silver": "#8b949e", "Bronze": "#CD7F32"}
 # Salesforce query
 # ---------------------------------------------------------------------------
 
-def _try_soql(sf, soql: str):
+# ---------------------------------------------------------------------------
+# Salesforce query — runs source report first, SOQL fallback
+# ---------------------------------------------------------------------------
+
+def fetch_accounts(sf, sub_vertical_field: str, psp_field: str,
+                   source_report_id: str | None = None) -> list[dict]:
+    """
+    Primary: run the existing Salesforce report via Analytics API so all its
+    filters (gift cards, NORAM, etc.) are respected.
+    Fallback: direct SOQL if the Analytics API call fails.
+    """
+    if source_report_id:
+        result = _fetch_from_report(sf, source_report_id,
+                                    sub_vertical_field, psp_field)
+        if result is not None:
+            return result, sub_vertical_field, psp_field
+
+    return _fetch_via_soql(sf, sub_vertical_field, psp_field)
+
+
+def _fetch_from_report(sf, report_id: str,
+                       sub_vertical_field: str, psp_field: str):
+    """Run the SF report and parse its factMap rows into dicts."""
+    logging.info("Running source report %s via Analytics API…", report_id)
     try:
-        return sf.query_all(soql).get("records", [])
+        url  = f"{sf.base_url}analytics/reports/{report_id}?includeDetails=true"
+        resp = sf.session.get(url, headers={"Authorization": f"Bearer {sf.session_id}"})
+        if resp.status_code != 200:
+            logging.warning("Analytics API %s — falling back to SOQL.", resp.status_code)
+            return None
+        data = resp.json()
     except Exception as exc:
-        return None, str(exc)
+        logging.warning("Analytics API error (%s) — falling back to SOQL.", exc)
+        return None
+
+    columns      = data.get("reportMetadata", {}).get("detailColumns", [])
+    col_info     = data.get("reportExtendedMetadata", {}).get("detailColumnInfo", {})
+    fact_map     = data.get("factMap", {})
+
+    # Build label→api_name lookup for flexible column matching
+    label_to_col = {info.get("label","").lower(): col
+                    for col, info in col_info.items()}
+
+    def _resolve(api_name: str, *label_hints: str):
+        """Return the column key that matches api_name or any label hint."""
+        if api_name and api_name.upper() in [c.upper() for c in columns]:
+            # find the actual-case key
+            for c in columns:
+                if c.upper() == api_name.upper():
+                    return c
+        for hint in label_hints:
+            match = label_to_col.get(hint.lower())
+            if match and match in columns:
+                return match
+        return None
+
+    name_col    = _resolve("NAME",            "account name", "name")
+    owner_col   = _resolve("OWNER_NAME",      "account owner", "owner name")
+    website_col = _resolve("WEBSITE",         "website")
+    rev_col     = _resolve("ANNUAL_REVENUE",  "annual revenue")
+    state_col   = _resolve("BILLING_STATE",   "billing state/province", "billing state")
+    country_col = _resolve("BILLING_COUNTRY", "billing country")
+    sv_col      = _resolve(sub_vertical_field, "sub-vertical", "sub vertical", "subvertical")
+    psp_col     = _resolve(psp_field,          "psp", "revops - psp estimate", "psp estimate")
+
+    records = []
+    for section in fact_map.values():
+        for row in section.get("rows", []):
+            cells = row.get("dataCells", [])
+            def _cell(col_key):
+                if not col_key or col_key not in columns:
+                    return None
+                idx = columns.index(col_key)
+                if idx >= len(cells):
+                    return None
+                c = cells[idx]
+                return c.get("label") or c.get("value")
+
+            records.append({
+                "Name":           _cell(name_col)    or "—",
+                "Owner":          {"Name": _cell(owner_col) or "—"},
+                "Website":        _cell(website_col) or "—",
+                "AnnualRevenue":  _parse_currency(_cell(rev_col)),
+                "BillingState":   _cell(state_col)   or "",
+                "BillingCountry": _cell(country_col) or "",
+                sub_vertical_field: _cell(sv_col),
+                psp_field:          _cell(psp_col),
+            })
+
+    logging.info("Report returned %d row(s).", len(records))
+    return records if records else None
 
 
-def fetch_accounts(sf, sub_vertical_field: str, psp_field: str) -> list[dict]:
-    """
-    Query accounts.  If custom fields don't exist yet, falls back
-    gracefully to standard fields only.
-    """
-    base_fields = "Id, Name, Owner.Name, Website, BillingState, BillingCountry, AnnualRevenue"
-    custom      = f", {sub_vertical_field}, {psp_field}"
-
-    # Try with custom fields first
-    soql = (
-        f"SELECT {base_fields}{custom} FROM Account "
-        f"WHERE BillingCountry IN "
-        f"('US','USA','United States','CA','CAN','Canada') "
-        f"ORDER BY AnnualRevenue DESC NULLS LAST"
-    )
-    logging.info("Querying Salesforce accounts…")
+def _parse_currency(val) -> float:
+    if val is None:
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    cleaned = str(val).replace("$","").replace(",","").replace(" ","")
     try:
+        return float(cleaned)
+    except ValueError:
+        return 0.0
+
+
+def _fetch_via_soql(sf, sub_vertical_field: str, psp_field: str):
+    """Direct SOQL — no report filters applied, returns all US/CA accounts."""
+    base   = "Id, Name, Owner.Name, Website, BillingState, BillingCountry, AnnualRevenue"
+    custom = f", {sub_vertical_field}, {psp_field}"
+    logging.info("Falling back to SOQL (no report filters applied)…")
+    try:
+        soql    = (f"SELECT {base}{custom} FROM Account WHERE BillingCountry IN "
+                   f"('US','USA','United States','CA','CAN','Canada') "
+                   f"ORDER BY AnnualRevenue DESC NULLS LAST")
         records = sf.query_all(soql).get("records", [])
-        logging.info("Fetched %d account(s) (with custom fields).", len(records))
+        logging.info("SOQL returned %d account(s) (with custom fields).", len(records))
         return records, sub_vertical_field, psp_field
     except Exception:
-        pass
-
-    # Fallback: standard fields only
-    logging.warning(
-        "Custom fields not found (%s, %s) — querying standard fields only.",
-        sub_vertical_field, psp_field,
-    )
-    soql_fallback = (
-        f"SELECT {base_fields} FROM Account "
-        f"WHERE BillingCountry IN "
-        f"('US','USA','United States','CA','CAN','Canada') "
-        f"ORDER BY AnnualRevenue DESC NULLS LAST"
-    )
-    records = sf.query_all(soql_fallback).get("records", [])
-    logging.info("Fetched %d account(s) (standard fields only).", len(records))
-    return records, None, None
+        soql    = (f"SELECT {base} FROM Account WHERE BillingCountry IN "
+                   f"('US','USA','United States','CA','CAN','Canada') "
+                   f"ORDER BY AnnualRevenue DESC NULLS LAST")
+        records = sf.query_all(soql).get("records", [])
+        logging.warning("SOQL returned %d account(s) (standard fields only).", len(records))
+        return records, None, None
 
 
 # ---------------------------------------------------------------------------
@@ -460,12 +540,17 @@ def main() -> None:
                         default=os.getenv("SF_SUB_VERTICAL_FIELD", "Sub_Vertical__c"))
     parser.add_argument("--psp-field",
                         default=os.getenv("SF_PSP_FIELD", "PSP__c"))
+    parser.add_argument("--source-report",
+                        default="00OVk00000KYxtNMAT",
+                        help="SF report ID to source data from (respects all report filters).")
     parser.add_argument("--output",
                         default="./output/us_coverage_report.html")
     args = parser.parse_args()
 
     sf = get_salesforce_client()
-    records, sv_field, psp_field = fetch_accounts(sf, args.sub_vertical_field, args.psp_field)
+    records, sv_field, psp_field = fetch_accounts(
+        sf, args.sub_vertical_field, args.psp_field, args.source_report
+    )
 
     if not records:
         logging.error("No records returned.")
