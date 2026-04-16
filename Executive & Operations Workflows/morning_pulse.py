@@ -70,7 +70,7 @@ def _google_creds() -> Credentials:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(creds_path, GOOGLE_SCOPES)
-            creds = flow.run_local_server(port=0)
+            creds = flow.run_console()
         with open(token_path, "w") as fh:
             fh.write(creds.to_json())
 
