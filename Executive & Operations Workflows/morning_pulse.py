@@ -69,6 +69,7 @@ def _google_creds() -> Credentials:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
+            os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
             flow = InstalledAppFlow.from_client_secrets_file(creds_path, GOOGLE_SCOPES)
             flow.redirect_uri = "http://localhost"
             auth_url, _ = flow.authorization_url(access_type="offline", prompt="consent")
