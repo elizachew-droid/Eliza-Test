@@ -30,8 +30,14 @@ def _google_creds() -> Credentials:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(creds_path, GOOGLE_SCOPES)
-            # run_console works in cloud/remote environments (no local browser needed)
-            creds = flow.run_console()
+            auth_url, _ = flow.authorization_url(access_type="offline", prompt="consent")
+            print(f"\nOpen this URL in your browser:\n{auth_url}\n")
+            print("After approving, your browser will redirect to localhost and show")
+            print("ERR_CONNECTION_REFUSED — that's expected. Copy the full URL from")
+            print("the address bar and paste it below.\n")
+            redirect_url = input("Paste the full redirect URL: ").strip()
+            flow.fetch_token(authorization_response=redirect_url)
+            creds = flow.credentials
         with open(token_path, "w") as fh:
             fh.write(creds.to_json())
 
