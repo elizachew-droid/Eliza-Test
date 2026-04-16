@@ -72,9 +72,16 @@ def _google_creds() -> Credentials:
             flow = InstalledAppFlow.from_client_secrets_file(creds_path, GOOGLE_SCOPES)
             flow.redirect_uri = "http://localhost"
             auth_url, _ = flow.authorization_url(access_type="offline", prompt="consent")
-            print(f"\nOpen this URL in your browser:\n{auth_url}\n")
-            print("After approving, copy the full redirect URL from your address bar and paste it below.\n")
-            redirect_url = input("Paste the full redirect URL: ").strip()
+            print("\n" + "="*60)
+            print("STEP 1: Open this URL in your browser:")
+            print(f"\n{auth_url}\n")
+            print("STEP 2: Sign in and click Allow.")
+            print("STEP 3: Browser shows 'localhost refused to connect' — expected.")
+            print("        Copy the ENTIRE URL from the address bar and paste below.")
+            print("="*60 + "\n")
+            redirect_url = input("Paste the full redirect URL here: ").strip()
+            if redirect_url.startswith("4/") or ("code=" not in redirect_url):
+                redirect_url = f"http://localhost/?code={redirect_url}&state=unused"
             flow.fetch_token(authorization_response=redirect_url)
             creds = flow.credentials
         with open(token_path, "w") as fh:
