@@ -1,0 +1,7 @@
+# Add this line to your crontab (crontab -e) to run the pulse at 8:45 AM ET.
+# Assumes the virtualenv is at ~/venvs/exec-workflows and the repo is at ~/Eliza-Test.
+#
+# Adjust paths as needed for your environment.
+
+45 8 * * 1-5 cd "/home/user/Eliza-Test/Executive & Operations Workflows" && \
+  /home/user/venvs/exec-workflows/bin/python morning_pulse.py >> /var/log/morning_pulse.log 2>&1
