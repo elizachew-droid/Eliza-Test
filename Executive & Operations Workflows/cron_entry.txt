@@ -3,5 +3,5 @@
 #
 # Adjust paths as needed for your environment.
 
-45 8 * * 1-5 cd "/home/user/Eliza-Test/Executive & Operations Workflows" && \
-  /home/user/venvs/exec-workflows/bin/python morning_pulse.py >> /var/log/morning_pulse.log 2>&1
+45 8 * * 1-5 cd "/workspaces/Eliza-Test/Executive & Operations Workflows" && \
+  ~/venvs/exec-workflows/bin/python morning_pulse.py >> /var/log/morning_pulse.log 2>&1
