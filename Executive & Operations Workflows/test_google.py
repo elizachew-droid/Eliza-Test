@@ -3,10 +3,38 @@ Quick smoke test for Google API connectivity.
 Run: python test_google.py
 """
 
+import os
 import datetime
 from zoneinfo import ZoneInfo
-from morning_pulse import _google_creds
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+
+GOOGLE_SCOPES = [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/calendar.readonly",
+]
+
+
+def _google_creds() -> Credentials:
+    token_path = os.path.join(os.path.dirname(__file__), "token.json")
+    creds_path = os.path.join(os.path.dirname(__file__), "credentials.json")
+
+    creds = None
+    if os.path.exists(token_path):
+        creds = Credentials.from_authorized_user_file(token_path, GOOGLE_SCOPES)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(creds_path, GOOGLE_SCOPES)
+            creds = flow.run_local_server(port=0)
+        with open(token_path, "w") as fh:
+            fh.write(creds.to_json())
+
+    return creds
 
 TZ = ZoneInfo("America/New_York")
 
