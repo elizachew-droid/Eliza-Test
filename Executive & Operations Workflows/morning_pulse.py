@@ -70,6 +70,7 @@ def _google_creds() -> Credentials:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(creds_path, GOOGLE_SCOPES)
+            flow.redirect_uri = "http://localhost"
             auth_url, _ = flow.authorization_url(access_type="offline", prompt="consent")
             print(f"\nOpen this URL in your browser:\n{auth_url}\n")
             print("After approving, copy the full redirect URL from your address bar and paste it below.\n")
