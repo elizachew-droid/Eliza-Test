@@ -1,0 +1,20 @@
+# RevOps Automation — Python dependencies
+# Install with: pip install -r requirements.txt
+
+# Salesforce REST + Bulk API client
+simple-salesforce==1.12.5
+
+# .env file loader
+python-dotenv==1.0.1
+
+# HTTP client (used by simple-salesforce and Apollo calls)
+requests==2.31.0
+
+# Looker SDK
+looker-sdk==23.20.0
+
+# Data manipulation (optional — used for report generation)
+pandas==2.2.2
+
+# Retry / backoff for API calls
+tenacity==8.2.3

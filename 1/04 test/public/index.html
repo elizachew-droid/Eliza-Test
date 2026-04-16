@@ -16,6 +16,15 @@
       --accent: #7c6aff;
     }
 
+    :root.light {
+      --bg: #f9f9f9;
+      --surface: #ffffff;
+      --border: #e0e0e0;
+      --text: #111111;
+      --muted: #666;
+      --accent: #7c6aff;
+    }
+
     body {
       background: var(--bg);
       color: var(--text);
@@ -25,7 +34,26 @@
       max-width: 600px;
       margin: 0 auto;
       padding: 80px 24px 120px;
+      transition: background 0.2s, color 0.2s;
     }
+
+    /* — Theme toggle — */
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 6px 12px;
+      color: var(--text);
+      transition: background 0.2s, border-color 0.2s;
+      z-index: 100;
+    }
+
+    .theme-toggle:hover { border-color: var(--accent); }
 
     /* — Hero — */
     .hero {
@@ -104,6 +132,57 @@
 
     .arrow { color: var(--muted); font-size: 1rem; }
 
+    /* — Blog grid — */
+    .blog-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .blog-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.2s;
+      display: block;
+    }
+
+    .blog-card:hover { border-color: var(--accent); }
+
+    .blog-thumb {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      display: block;
+      background: var(--surface);
+    }
+
+    .blog-thumb-placeholder {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+    }
+
+    .blog-card-body { padding: 12px 14px; }
+
+    .blog-card-body strong {
+      display: block;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .blog-card-body span {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+      display: block;
+    }
+
     /* — Contact form — */
     form { display: flex; flex-direction: column; gap: 12px; }
 
@@ -151,6 +230,8 @@
   </style>
 </head>
 <body>
+
+  <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
 
   <!-- Hero -->
   <div class="hero">
@@ -203,6 +284,41 @@
     </ul>
   </section>
 
+  <!-- Blog -->
+  <section>
+    <h2>Blog</h2>
+    <div class="blog-grid">
+      <a class="blog-card" href="#">
+        <div class="blog-thumb-placeholder" style="background:linear-gradient(135deg,#7c6aff,#c084fc);">✍️</div>
+        <div class="blog-card-body">
+          <strong>Getting Started with Node.js</strong>
+          <span>Mar 28, 2026</span>
+        </div>
+      </a>
+      <a class="blog-card" href="#">
+        <div class="blog-thumb-placeholder" style="background:linear-gradient(135deg,#06b6d4,#6366f1);">🎨</div>
+        <div class="blog-card-body">
+          <strong>Designing for Dark Mode</strong>
+          <span>Mar 15, 2026</span>
+        </div>
+      </a>
+      <a class="blog-card" href="#">
+        <div class="blog-thumb-placeholder" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">🚀</div>
+        <div class="blog-card-body">
+          <strong>How I Built This Site</strong>
+          <span>Feb 20, 2026</span>
+        </div>
+      </a>
+      <a class="blog-card" href="#">
+        <div class="blog-thumb-placeholder" style="background:linear-gradient(135deg,#10b981,#06b6d4);">🧠</div>
+        <div class="blog-card-body">
+          <strong>Lessons from Side Projects</strong>
+          <span>Jan 10, 2026</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
   <!-- Contact -->
   <section>
     <h2>Contact</h2>
@@ -224,6 +340,20 @@
       btn.disabled = true;
       e.target.reset();
       setTimeout(() => { btn.textContent = 'Send message'; btn.disabled = false; }, 3000);
+    }
+
+    const toggle = document.querySelector('.theme-toggle');
+
+    function toggleTheme() {
+      const isLight = document.documentElement.classList.toggle('light');
+      toggle.textContent = isLight ? '☀️' : '🌙';
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    }
+
+    // Restore saved preference
+    if (localStorage.getItem('theme') === 'light') {
+      document.documentElement.classList.add('light');
+      toggle.textContent = '☀️';
     }
   </script>
 
