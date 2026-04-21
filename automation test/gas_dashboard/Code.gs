@@ -68,12 +68,20 @@ function getSalesforceData() {
 // Fields we'd like to use but that may not exist in every org.
 // Maps our internal key → array of candidate API names to try (first match wins).
 const OPTIONAL_FIELDS = {
-  subStage:   ['Sub_Stages__c', 'Sub_Stage__c', 'SubStage__c', 'Stage_Detail__c'],
-  mafDate:    ['Date_MAF_Submitted_By_Merchant__c', 'MAF_Submitted_Date__c', 'MAF_Date__c'],
-  territory:  ['Account_Territory__c', 'Territory__c'],
-  ownerTerritory: ['Record_Owner_Sales_Territory__c', 'Owner_Sales_Territory__c'],
-  secondTerritory:['Second_Opp_Owner_Sales_Territory__c', 'Second_Owner_Territory__c'],
-  channel:    ['Acquiring_Channel__c', 'Channel__c'],
+  subStage:        ['Sub_Stages__c', 'Sub_Stage__c', 'SubStage__c', 'Stage_Detail__c'],
+  mafDate:         ['Date_MAF_Submitted_By_Merchant__c', 'MAF_Submitted_Date__c', 'MAF_Date__c'],
+  territory:       ['Account_Territory__c', 'Territory__c'],
+  ownerTerritory:  ['Record_Owner_Sales_Territory__c', 'Owner_Sales_Territory__c'],
+  secondTerritory: ['Second_Opp_Owner_Sales_Territory__c', 'Second_Owner_Territory__c'],
+  channel:         ['Acquiring_Channel__c', 'Channel__c'],
+  // Velocity date stamps (direct field approach — more accurate than field history)
+  firstExploreDate:['First_Explore_Meeting_Date__c', 'First_Explore_Date__c', 'E1_Date__c'],
+  dateSetP1:       ['Date_Set_to_P1__c', 'P1_Date__c', 'Date_P1__c'],
+  dateSetT1:       ['Date_Set_to_T1__c', 'T1_Date__c', 'Date_T1__c'],
+  dateSetH1:       ['Date_Set_to_H1__c', 'H1_Date__c', 'Date_H1__c'],
+  // Expected Monthly NR (Fx) — EMNR
+  emnr:            ['Expected_Monthly_NR_Fx__c', 'Exp_Monthly_NR_Fx__c', 'EMNR__c',
+                    'Expected_Monthly_NR__c', 'Monthly_NR__c', 'Exp_NR__c'],
 };
 
 function discoverOptionalFields_(instanceUrl, accessToken) {
@@ -115,12 +123,17 @@ function fetchOpportunities_(instanceUrl, accessToken, knownFields) {
     'CreatedDate', 'CloseDate',
     'Owner.Name', 'OwnerId', 'Amount', 'Account.Name',
   ];
-  if (kf.subStage)        selectFields.push(kf.subStage);
-  if (kf.mafDate)         selectFields.push(kf.mafDate);
-  if (kf.territory)       selectFields.push(kf.territory);
-  if (kf.ownerTerritory)  selectFields.push(kf.ownerTerritory);
-  if (kf.secondTerritory) selectFields.push(kf.secondTerritory);
-  if (kf.channel)         selectFields.push(kf.channel);
+  if (kf.subStage)         selectFields.push(kf.subStage);
+  if (kf.mafDate)          selectFields.push(kf.mafDate);
+  if (kf.territory)        selectFields.push(kf.territory);
+  if (kf.ownerTerritory)   selectFields.push(kf.ownerTerritory);
+  if (kf.secondTerritory)  selectFields.push(kf.secondTerritory);
+  if (kf.channel)          selectFields.push(kf.channel);
+  if (kf.firstExploreDate) selectFields.push(kf.firstExploreDate);
+  if (kf.dateSetP1)        selectFields.push(kf.dateSetP1);
+  if (kf.dateSetT1)        selectFields.push(kf.dateSetT1);
+  if (kf.dateSetH1)        selectFields.push(kf.dateSetH1);
+  if (kf.emnr)             selectFields.push(kf.emnr);
 
   // Build WHERE — NORAM filter using whichever territory/channel fields exist
   const noramClauses = [];

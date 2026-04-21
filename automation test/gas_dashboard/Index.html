@@ -7,35 +7,36 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  body { background:#0d1117; color:#e6edf3; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
-  .card { background:#161b22; border:1px solid #30363d; border-radius:10px; }
-  .badge-red    { background:rgba(218,54,51,.18); color:#f85149; border:1px solid rgba(218,54,51,.3); }
-  .badge-green  { background:rgba(46,164,79,.18);  color:#3fb950; border:1px solid rgba(46,164,79,.3);  }
-  .badge-yellow { background:rgba(210,153,34,.18); color:#e3b341; border:1px solid rgba(210,153,34,.3); }
-  .badge-blue   { background:rgba(76,155,232,.18); color:#79c0ff; border:1px solid rgba(76,155,232,.3); }
-  .cell-red   { background:rgba(218,54,51,.2)  !important; color:#f85149; font-weight:600; }
-  .cell-amber { background:rgba(210,153,34,.15)!important; color:#e3b341; font-weight:600; }
-  .toggle-pill { background:#21262d; border:1px solid #30363d; border-radius:20px; padding:4px; display:inline-flex; gap:2px; }
-  .toggle-pill button { border-radius:16px; padding:4px 14px; font-size:12px; font-weight:600; transition:all .15s; color:#8b949e; }
-  .toggle-pill button.active { background:#4C9BE8; color:#fff; }
-  ::-webkit-scrollbar { width:4px; height:4px; } ::-webkit-scrollbar-track { background:#161b22; } ::-webkit-scrollbar-thumb { background:#30363d; border-radius:4px; }
-  th { position:sticky; top:0; background:#161b22; z-index:1; }
-  .spinner { width:36px; height:36px; border:3px solid #30363d; border-top-color:#4C9BE8; border-radius:50%; animation:spin .8s linear infinite; }
-  @keyframes spin { to { transform:rotate(360deg); } }
+  body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+  .card{background:#161b22;border:1px solid #30363d;border-radius:10px;}
+  .toggle-pill{background:#21262d;border:1px solid #30363d;border-radius:20px;padding:4px;display:inline-flex;gap:2px;}
+  .toggle-pill button{border-radius:16px;padding:4px 14px;font-size:12px;font-weight:600;transition:all .15s;color:#8b949e;border:none;cursor:pointer;background:transparent;}
+  .toggle-pill button.active{background:#4C9BE8;color:#fff;}
+  .cell-red{background:rgba(218,54,51,.2)!important;color:#f85149;font-weight:600;}
+  .cell-amber{background:rgba(210,153,34,.15)!important;color:#e3b341;font-weight:600;}
+  .spinner{width:36px;height:36px;border:3px solid #30363d;border-top-color:#4C9BE8;border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .section-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;padding:16px 20px;border-radius:10px;}
+  .section-header:hover{background:rgba(255,255,255,.03);}
+  .chevron{transition:transform .2s;color:#8b949e;font-size:11px;}
+  th{position:sticky;top:0;background:#161b22;z-index:1;}
+  ::-webkit-scrollbar{width:4px;height:4px;}
+  ::-webkit-scrollbar-track{background:#161b22;}
+  ::-webkit-scrollbar-thumb{background:#30363d;border-radius:4px;}
 </style>
 </head>
 <body class="min-h-screen p-6">
 
-<!-- Loading overlay -->
+<!-- Loading -->
 <div id="loading" class="fixed inset-0 flex flex-col items-center justify-center z-50" style="background:#0d1117">
   <div class="spinner mb-4"></div>
   <p class="text-sm" style="color:#8b949e">Pulling NORAM data from Salesforce…</p>
 </div>
 
-<!-- Error overlay -->
+<!-- Error -->
 <div id="error-box" class="hidden fixed inset-0 flex items-center justify-center z-50 p-8" style="background:#0d1117">
   <div class="card p-8 max-w-lg w-full">
-    <h2 class="text-red-400 font-bold mb-3 text-lg">Connection Error</h2>
+    <h2 class="font-bold mb-3 text-lg" style="color:#f85149">Connection Error</h2>
     <pre id="error-msg" class="text-sm whitespace-pre-wrap" style="color:#8b949e"></pre>
     <button onclick="loadData()" class="mt-5 px-4 py-2 rounded text-sm font-semibold" style="background:#4C9BE8;color:#fff">Retry</button>
   </div>
@@ -52,9 +53,9 @@
     </div>
     <div class="flex items-center gap-3 flex-wrap">
       <div class="toggle-pill">
-        <button id="btn-l30" class="active" onclick="setWindow(30,this)">L30</button>
-        <button id="btn-l90" onclick="setWindow(90,this)">L90</button>
-        <button id="btn-all" onclick="setWindow(0,this)">All Time</button>
+        <button class="active" onclick="setWindow(30,this)">L30</button>
+        <button onclick="setWindow(90,this)">L90</button>
+        <button onclick="setWindow(0,this)">All Time</button>
       </div>
       <button onclick="loadData()" class="px-3 py-1.5 rounded text-xs font-semibold" style="background:#21262d;border:1px solid #30363d;color:#8b949e">↻ Refresh</button>
     </div>
@@ -62,7 +63,7 @@
 
   <!-- KPI row -->
   <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-    <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">OPEN PIPELINE</p><p class="text-2xl font-bold" id="kpi-open">—</p></div>
+    <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">OPEN OPPS</p><p class="text-2xl font-bold" id="kpi-open">—</p><p class="text-xs mt-1" style="color:#30363d">Discover→Handover</p></div>
     <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">WON / LIVE</p><p class="text-2xl font-bold" style="color:#3fb950" id="kpi-won">—</p></div>
     <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">LOST / DQ</p><p class="text-2xl font-bold" style="color:#f85149" id="kpi-lost">—</p></div>
     <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">MAF SUBMITTED</p><p class="text-2xl font-bold" style="color:#e3b341" id="kpi-maf">—</p></div>
@@ -70,390 +71,582 @@
     <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">TOTAL NORAM</p><p class="text-2xl font-bold" id="kpi-total">—</p></div>
   </div>
 
-  <!-- Charts row -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-
-    <!-- Movement Volume -->
-    <div class="card p-5">
-      <h2 class="text-sm font-semibold mb-1" style="color:#8b949e">MOVEMENT VOLUME <span id="window-label" class="badge-blue px-2 py-0.5 rounded text-xs ml-1">L30</span></h2>
-      <p class="text-xs mb-4" style="color:#30363d">Unique opportunity movements into each stage</p>
-      <canvas id="volumeChart" style="max-height:240px"></canvas>
-    </div>
-
-    <!-- Velocity Engine -->
-    <div class="card p-5">
-      <h2 class="text-sm font-semibold mb-1" style="color:#8b949e">SALES VELOCITY ENGINE</h2>
-      <p class="text-xs mb-4" style="color:#30363d">Average calendar days between stage transitions</p>
-      <canvas id="velocityChart" style="max-height:240px"></canvas>
-    </div>
-
-  </div>
-
-  <!-- Owner Leaderboard -->
-  <div class="card p-5 mb-6">
-    <h2 class="text-sm font-semibold mb-1" style="color:#8b949e">OWNER LEADERBOARD</h2>
-    <p class="text-xs mb-4" style="color:#30363d">Average gap days per stage transition · <span class="cell-red px-1 rounded">red</span> = &gt;14 days · <span class="cell-amber px-1 rounded">amber</span> = 8–14 days</p>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm border-collapse">
-        <thead>
-          <tr style="border-bottom:1px solid #30363d">
-            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Owner</th>
-            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">Opps</th>
-            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#3fb950">Won</th>
-            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">Lead→E1</th>
-            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">E1→P1</th>
-            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">P1→T1</th>
-            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">T1→H1</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboard-body"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Open Pipeline -->
+  <!-- Open Pipeline by Sub-Stage (TOP) -->
   <div class="card p-5 mb-6">
     <h2 class="text-sm font-semibold mb-4" style="color:#8b949e">OPEN PIPELINE BY SUB-STAGE</h2>
     <div id="pipeline-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
   </div>
 
+  <!-- Charts row -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold mb-1" style="color:#8b949e">MOVEMENT VOLUME <span id="window-label" class="px-2 py-0.5 rounded text-xs ml-1" style="background:rgba(76,155,232,.18);color:#79c0ff">L30</span></h2>
+      <p class="text-xs mb-4" style="color:#30363d">All stage transitions in period (not deduplicated)</p>
+      <canvas id="volumeChart" style="max-height:240px"></canvas>
+    </div>
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold mb-1" style="color:#8b949e">SALES VELOCITY ENGINE</h2>
+      <p class="text-xs mb-4" style="color:#30363d">Avg calendar days between custom date stamps</p>
+      <canvas id="velocityChart" style="max-height:240px"></canvas>
+    </div>
+  </div>
+
+  <!-- Opportunities Created -->
+  <div class="card mb-6">
+    <div class="section-header" onclick="toggleSection('created')">
+      <div>
+        <span class="text-sm font-semibold" style="color:#8b949e">OPPORTUNITIES CREATED</span>
+        <span id="created-meta" class="text-xs ml-3" style="color:#30363d"></span>
+      </div>
+      <span class="chevron" id="chev-created">▼</span>
+    </div>
+    <div id="body-created" class="px-5 pb-5">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead><tr style="border-bottom:1px solid #30363d">
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Opportunity</th>
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Owner</th>
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Stage</th>
+            <th class="text-right py-2 px-3 text-xs font-semibold" style="color:#8b949e">EMNR</th>
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Created</th>
+          </tr></thead>
+          <tbody id="created-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Won Opportunities -->
+  <div class="card mb-6">
+    <div class="section-header" onclick="toggleSection('won')">
+      <div>
+        <span class="text-sm font-semibold" style="color:#3fb950">WON OPPORTUNITIES</span>
+        <span id="won-meta" class="text-xs ml-3" style="color:#30363d"></span>
+      </div>
+      <span class="chevron" id="chev-won">▼</span>
+    </div>
+    <div id="body-won" class="px-5 pb-5">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead><tr style="border-bottom:1px solid #30363d">
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Opportunity</th>
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Owner</th>
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Status</th>
+            <th class="text-right py-2 px-3 text-xs font-semibold" style="color:#8b949e">EMNR</th>
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Close Date</th>
+          </tr></thead>
+          <tbody id="won-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lost Opportunities -->
+  <div class="card mb-6">
+    <div class="section-header" onclick="toggleSection('lost')">
+      <div>
+        <span class="text-sm font-semibold" style="color:#f85149">LOST / DISQUALIFIED</span>
+        <span id="lost-meta" class="text-xs ml-3" style="color:#30363d"></span>
+      </div>
+      <span class="chevron" id="chev-lost">▼</span>
+    </div>
+    <div id="body-lost" class="px-5 pb-5">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead><tr style="border-bottom:1px solid #30363d">
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Opportunity</th>
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Owner</th>
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Status</th>
+            <th class="text-right py-2 px-3 text-xs font-semibold" style="color:#8b949e">EMNR</th>
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Close Date</th>
+          </tr></thead>
+          <tbody id="lost-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Owner Leaderboard -->
+  <div class="card p-5 mb-6">
+    <h2 class="text-sm font-semibold mb-1" style="color:#8b949e">OWNER LEADERBOARD</h2>
+    <p class="text-xs mb-4" style="color:#30363d">Avg gap days from custom date stamps · <span style="background:rgba(218,54,51,.2);color:#f85149;padding:1px 6px;border-radius:4px">red</span> &gt;14d · <span style="background:rgba(210,153,34,.15);color:#e3b341;padding:1px 6px;border-radius:4px">amber</span> 8–14d</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border-collapse">
+        <thead><tr style="border-bottom:1px solid #30363d">
+          <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Owner</th>
+          <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">Opps</th>
+          <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#3fb950">Won</th>
+          <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">Lead→E1</th>
+          <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">E1→P1</th>
+          <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">P1→T1</th>
+          <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">T1→H1</th>
+        </tr></thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div><!-- /dashboard -->
-
 <script>
-// ============================================================================
-// State
-// ============================================================================
-let _opps = [], _history = [], _windowDays = 30, _knownFields = {};
-let _volumeChart, _velocityChart;
 
-// ============================================================================
-// NORAM filter  (client-side validation matching server SOQL)
-// ============================================================================
-function isNORAM(opp) {
-  if (opp.Type !== 'New Business') return false;
-  const t1 = (opp.Account_Territory__c || '').includes('NORAM');
-  const t2 = (opp.Record_Owner_Sales_Territory__c || '').includes('NORAM');
-  const t3 = (opp.Second_Opp_Owner_Sales_Territory__c || '').includes('NORAM');
-  const t4 = opp.Acquiring_Channel__c === 'CRB(US)';
-  return t1 || t2 || t3 || t4;
-}
+// ── State ─────────────────────────────────────────────────────────────────────
+let _opps        = [];
+let _history     = [];
+let _windowDays  = 30;
+let _knownFields = {};
+let _volumeChart = null;
+let _velocityChart = null;
 
-// ============================================================================
-// Stage matching helpers
-// ============================================================================
+// ── Stage config ──────────────────────────────────────────────────────────────
 const STAGE_VALUES = {
-  E1: ['e1','explore'],
-  P1: ['p1','propose'],
-  T1: ['t1','trade'],
-  H1: ['h1','handover'],
+  e1: ['e1','explore','exploration','1st explore','1st exploration','first explore'],
+  p1: ['p1','propose','proposal'],
+  t1: ['t1','trade','trading'],
+  h1: ['h1','handover','hand over','hand-over'],
 };
-const STAGE_PAIRS = [
-  { key:'Lead→E1', from:null,   to:STAGE_VALUES.E1 },
-  { key:'E1→P1',  from:STAGE_VALUES.E1, to:STAGE_VALUES.P1 },
-  { key:'P1→T1',  from:STAGE_VALUES.P1, to:STAGE_VALUES.T1 },
-  { key:'T1→H1',  from:STAGE_VALUES.T1, to:STAGE_VALUES.H1 },
+
+const OPEN_STAGE_NAMES = [
+  'discover','discovery','explore','exploration','e1','propose','proposal','p1',
+  'trade','trading','t1','handover','hand over','hand-over','h1',
+  'Discover','Discovery','Explore','Exploration','E1','Propose','Proposal','P1',
+  'Trade','Trading','T1','Handover','H1',
 ];
 
-function matchesStage(val, tokens) {
-  if (!val || !tokens) return false;
-  const v = val.toLowerCase();
-  return tokens.some(t => v.includes(t));
+const WON_STAGES  = ['Closed Won','Live','Won','Closed - Won'];
+const LOST_STAGES = ['Merchant Lost','Disqualified','Closed Lost','Closed - Lost','DQ','Lost'];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmtCurrency(v) {
+  if (v == null || v === '') return '—';
+  const n = Number(v);
+  if (isNaN(n)) return '—';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(0);
 }
 
-// Build a map { oppId → sorted history[] }
-function buildHistMap(history) {
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+
+function daysBetween(a, b) {
+  if (!a || !b) return null;
+  const da = new Date(a), db = new Date(b);
+  if (isNaN(da) || isNaN(db)) return null;
+  return Math.round(Math.abs(db - da) / 86400000);
+}
+
+function windowStart() {
+  if (_windowDays === 0) return null;
+  const d = new Date();
+  d.setDate(d.getDate() - _windowDays);
+  return d;
+}
+
+function inWindow(dateStr) {
+  if (_windowDays === 0) return true;
+  if (!dateStr) return false;
+  return new Date(dateStr) >= windowStart();
+}
+
+function matchStage(val, key) {
+  if (!val) return false;
+  const v = val.toString().toLowerCase().trim();
+  return STAGE_VALUES[key].some(s => v === s || v.includes(s));
+}
+
+function inferSubStage(opp) {
+  const kf = _knownFields;
+  const raw = kf.subStage ? opp[kf.subStage] : null;
+  if (raw) return raw;
+  return opp.StageName || '';
+}
+
+function isOpenOpp(opp) {
+  const s = (opp.StageName || '').toLowerCase();
+  return OPEN_STAGE_NAMES.some(n => n.toLowerCase() === s) ||
+         matchStage(inferSubStage(opp), 'e1') ||
+         matchStage(inferSubStage(opp), 'p1') ||
+         matchStage(inferSubStage(opp), 't1') ||
+         matchStage(inferSubStage(opp), 'h1');
+}
+
+function isNORAM(opp) {
+  const kf = _knownFields;
+  if (opp.Type !== 'New Business') return false;
+  if (kf.territory      && (opp[kf.territory]      || '').toUpperCase().includes('NORAM')) return true;
+  if (kf.ownerTerritory && (opp[kf.ownerTerritory] || '').toUpperCase().includes('NORAM')) return true;
+  if (kf.secondTerritory&& (opp[kf.secondTerritory]|| '').toUpperCase().includes('NORAM')) return true;
+  if (kf.channel        && opp[kf.channel] === 'CRB(US)') return true;
+  // If no territory fields exist server filtered already
+  if (!kf.territory && !kf.ownerTerritory && !kf.secondTerritory && !kf.channel) return true;
+  return false;
+}
+
+// ── Field-history map: oppId → sorted list of {field, oldValue, newValue, date} ─
+function buildHistMap() {
   const map = {};
-  history.forEach(h => {
-    if (!map[h.OpportunityId]) map[h.OpportunityId] = [];
-    map[h.OpportunityId].push(h);
-  });
-  Object.values(map).forEach(arr =>
-    arr.sort((a,b) => new Date(a.CreatedDate) - new Date(b.CreatedDate))
-  );
+  for (const r of _history) {
+    const id = r.OpportunityId;
+    if (!map[id]) map[id] = [];
+    map[id].push({
+      field:    r.Field,
+      oldValue: r.OldValue,
+      newValue: r.NewValue,
+      date:     r.CreatedDate,
+    });
+  }
   return map;
 }
 
-// Infer current sub-stage from the most recent field history entry
-function inferSubStage(histMap, oppId) {
-  const hist = histMap[oppId] || [];
-  if (!hist.length) return null;
-  const last = hist[hist.length - 1];
-  return last.NewValue || null;
-}
-
-function firstStageDate(histMap, oppId, tokens) {
-  const hist = histMap[oppId] || [];
-  const match = hist.find(h => matchesStage(h.NewValue, tokens));
-  return match ? new Date(match.CreatedDate) : null;
-}
-
-function daysBetween(d1, d2) {
-  if (!d1 || !d2) return null;
-  const diff = Math.round((d2 - d1) / 86400000);
-  return diff >= 0 ? diff : null;
-}
-
-// ============================================================================
-// Metrics computation
-// ============================================================================
-function computeMetrics(opps, history, windowDays) {
-  const now    = new Date();
-  const cutoff = windowDays > 0 ? new Date(now - windowDays * 86400000) : new Date(0);
-  const histMap = buildHistMap(history);
-
-  // Velocity data per opp
-  const velocityRows = opps.map(opp => {
-    const created = new Date(opp.CreatedDate);
-    const e1 = firstStageDate(histMap, opp.Id, STAGE_VALUES.E1);
-    const p1 = firstStageDate(histMap, opp.Id, STAGE_VALUES.P1);
-    const t1 = firstStageDate(histMap, opp.Id, STAGE_VALUES.T1);
-    const h1 = firstStageDate(histMap, opp.Id, STAGE_VALUES.H1);
-    return {
-      id:      opp.Id,
-      owner:   (opp.Owner || {}).Name || 'Unknown',
-      stage:   opp.StageName || '',
-      subStage:opp[_knownFields.subStage] || inferSubStage(histMap, opp.Id) || '—',
-      amount:  opp.Amount || 0,
-      closeDate: opp.CloseDate,
-      mafDate: opp[_knownFields.mafDate] || null,
-      gaps: {
-        'Lead→E1': daysBetween(created, e1),
-        'E1→P1':   daysBetween(e1, p1),
-        'P1→T1':   daysBetween(p1, t1),
-        'T1→H1':   daysBetween(t1, h1),
-      }
-    };
-  });
-
-  // Movement Volume: unique opps moving into each stage within window
-  const volumeSeen = {};
-  const volume = { E1:0, P1:0, T1:0, H1:0, MAF:0 };
-  history.forEach(h => {
-    if (new Date(h.CreatedDate) < cutoff) return;
-    for (const [stage, tokens] of Object.entries(STAGE_VALUES)) {
-      if (matchesStage(h.NewValue, tokens)) {
-        const k = h.OpportunityId + '_' + stage;
-        if (!volumeSeen[k]) { volumeSeen[k] = true; volume[stage]++; }
-      }
-    }
-  });
-  opps.forEach(o => {
-    if (o.Date_MAF_Submitted_By_Merchant__c) {
-      if (new Date(o.Date_MAF_Submitted_By_Merchant__c) >= cutoff) volume.MAF++;
-    }
-  });
-
-  // Won/Live, Lost/DQ (by CloseDate in window)
-  const WON_STAGES  = ['closed won','live'];
-  const LOST_STAGES = ['merchant lost','disqualified'];
-  let wonCount=0, lostCount=0, mafCount=volume.MAF;
-
-  opps.forEach(o => {
-    const stage = (o.StageName || '').toLowerCase();
-    const cd    = o.CloseDate ? new Date(o.CloseDate) : null;
-    const inWindow = !cd || cd >= cutoff;
-    if (WON_STAGES.includes(stage)  && inWindow) wonCount++;
-    if (LOST_STAGES.includes(stage) && inWindow) lostCount++;
-  });
-
-  // Open pipeline
-  const openStages = ['closed won','live','merchant lost','disqualified','closed lost'];
-  const openOpps   = opps.filter(o => !openStages.includes((o.StageName||'').toLowerCase()));
-  const pipelineByStage = {};
-  openOpps.forEach(o => {
-    const s = o.Sub_Stage__c || o.StageName || 'Unknown';
-    if (!pipelineByStage[s]) pipelineByStage[s] = { count:0, value:0 };
-    pipelineByStage[s].count++;
-    pipelineByStage[s].value += o.Amount || 0;
-  });
-
-  const pipelineValue = openOpps.reduce((s,o) => s + (o.Amount||0), 0);
-
-  // Avg velocity (global)
-  const avgGaps = {};
-  STAGE_PAIRS.forEach(({key}) => {
-    const vals = velocityRows.map(r => r.gaps[key]).filter(v => v !== null);
-    avgGaps[key] = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
-  });
-
-  // Per-owner leaderboard
-  const ownerMap = {};
-  velocityRows.forEach(r => {
-    if (!ownerMap[r.owner]) {
-      ownerMap[r.owner] = { owner:r.owner, count:0, won:0, gapSums:{}, gapCounts:{} };
-      STAGE_PAIRS.forEach(({key}) => { ownerMap[r.owner].gapSums[key]=0; ownerMap[r.owner].gapCounts[key]=0; });
-    }
-    const o = ownerMap[r.owner];
-    o.count++;
-    if (WON_STAGES.includes(r.stage.toLowerCase())) o.won++;
-    STAGE_PAIRS.forEach(({key}) => {
-      if (r.gaps[key] !== null) { o.gapSums[key] += r.gaps[key]; o.gapCounts[key]++; }
-    });
-  });
-  const leaderboard = Object.values(ownerMap).map(o => ({
-    owner: o.owner,
-    count: o.count,
-    won:   o.won,
-    avgs:  Object.fromEntries(
-      STAGE_PAIRS.map(({key}) => [key, o.gapCounts[key] > 0
-        ? Math.round(o.gapSums[key] / o.gapCounts[key]) : null])
-    )
-  })).sort((a,b) => b.count - a.count);
-
-  return { volume, wonCount, lostCount, mafCount, pipelineValue,
-           openOpps, pipelineByStage, avgGaps, leaderboard };
-}
-
-// ============================================================================
-// Render
-// ============================================================================
-
-function fmtCurrency(v) {
-  if (v >= 1e9) return '$' + (v/1e9).toFixed(1) + 'B';
-  if (v >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
-  if (v >= 1e3) return '$' + (v/1e3).toFixed(0) + 'K';
-  return '$' + v.toFixed(0);
-}
-
-function renderKPIs(m) {
-  const openOpps = _opps.filter(o => {
-    const s = (o.StageName||'').toLowerCase();
-    return !['closed won','live','merchant lost','disqualified','closed lost'].includes(s);
-  });
-  document.getElementById('kpi-open').textContent  = openOpps.length;
-  document.getElementById('kpi-won').textContent   = m.wonCount;
-  document.getElementById('kpi-lost').textContent  = m.lostCount;
-  document.getElementById('kpi-maf').textContent   = m.mafCount;
-  document.getElementById('kpi-value').textContent = fmtCurrency(m.pipelineValue);
-  document.getElementById('kpi-total').textContent = _opps.length;
-}
-
-function renderVolumeChart(volume) {
-  const labels = ['E1 — Explore','P1 — Propose','T1 — Trade','H1 — Handover','MAF Submitted'];
-  const data   = [volume.E1, volume.P1, volume.T1, volume.H1, volume.MAF];
-  const colours = ['#4C9BE8','#E8834C','#4CE8A0','#B04CE8','#E8D44C'];
-
-  if (_volumeChart) _volumeChart.destroy();
-  _volumeChart = new Chart(document.getElementById('volumeChart'), {
-    type:'bar',
-    data:{ labels, datasets:[{ data, backgroundColor:colours, borderRadius:5, borderSkipped:false }] },
-    options:{
-      responsive:true, maintainAspectRatio:true,
-      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: c => ' ' + c.parsed.y + ' movements' } } },
-      scales:{
-        x:{ grid:{display:false}, ticks:{ color:'#e6edf3', font:{size:11} } },
-        y:{ grid:{ color:'#30363d' }, ticks:{ color:'#8b949e', precision:0 } }
-      }
-    }
-  });
-}
-
-function renderVelocityChart(avgGaps) {
-  const labels   = Object.keys(avgGaps);
-  const data     = Object.values(avgGaps);
-  const colours  = data.map(v => v > 14 ? '#f85149' : v > 7 ? '#e3b341' : '#3fb950');
-
-  if (_velocityChart) _velocityChart.destroy();
-  _velocityChart = new Chart(document.getElementById('velocityChart'), {
-    type:'bar',
-    data:{ labels, datasets:[{ data, backgroundColor:colours, borderRadius:5, borderSkipped:false, indexAxis:'y' }] },
-    options:{
-      indexAxis:'y', responsive:true, maintainAspectRatio:true,
-      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: c => ' ' + c.parsed.x + ' avg days' } } },
-      scales:{
-        x:{ grid:{ color:'#30363d' }, ticks:{ color:'#8b949e' } },
-        y:{ grid:{ display:false }, ticks:{ color:'#e6edf3', font:{size:12} } }
-      }
-    }
-  });
-}
-
-function renderLeaderboard(rows) {
-  const tbody = document.getElementById('leaderboard-body');
-  tbody.innerHTML = '';
-  rows.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.style.borderBottom = '1px solid #30363d';
-    function gapCell(v) {
-      if (v === null) return `<td class="text-center py-2 px-3" style="color:#30363d">—</td>`;
-      const cls = v > 14 ? 'cell-red' : v > 7 ? 'cell-amber' : '';
-      return `<td class="text-center py-2 px-3 rounded ${cls}">${v}d</td>`;
-    }
-    tr.innerHTML = `
-      <td class="py-2 px-3 font-medium">${row.owner}</td>
-      <td class="text-center py-2 px-3" style="color:#8b949e">${row.count}</td>
-      <td class="text-center py-2 px-3" style="color:#3fb950">${row.won}</td>
-      ${STAGE_PAIRS.map(({key}) => gapCell(row.avgs[key])).join('')}
-    `;
-    tbody.appendChild(tr);
-  });
-  if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6" style="color:#8b949e">No data</td></tr>';
-  }
-}
-
-function renderPipeline(byStage) {
-  const STAGE_COLOURS = {
-    'E1':     '#4C9BE8', 'Explore': '#4C9BE8',
-    'P1':     '#E8834C', 'Propose': '#E8834C',
-    'T1':     '#4CE8A0', 'Trade':   '#4CE8A0',
-    'H1':     '#B04CE8', 'Handover':'#B04CE8',
+// ── Velocity from direct date stamps ─────────────────────────────────────────
+function getVelocityGaps(opp) {
+  const kf   = _knownFields;
+  const cDate = opp.CreatedDate;
+  const e1    = kf.firstExploreDate ? opp[kf.firstExploreDate] : null;
+  const p1    = kf.dateSetP1        ? opp[kf.dateSetP1]        : null;
+  const t1    = kf.dateSetT1        ? opp[kf.dateSetT1]        : null;
+  const h1    = kf.dateSetH1        ? opp[kf.dateSetH1]        : null;
+  return {
+    leadToE1: daysBetween(cDate, e1),
+    e1ToP1:   daysBetween(e1, p1),
+    p1ToT1:   daysBetween(p1, t1),
+    t1ToH1:   daysBetween(t1, h1),
   };
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────────────
+function renderKPIs(opps) {
+  const ws = windowStart();
+
+  const openOpps  = opps.filter(o => isOpenOpp(o));
+  const wonOpps   = opps.filter(o => WON_STAGES.includes(o.StageName) &&
+                                     (!ws || new Date(o.CloseDate) >= ws));
+  const lostOpps  = opps.filter(o => LOST_STAGES.includes(o.StageName) &&
+                                     (!ws || new Date(o.CloseDate) >= ws));
+  const kf = _knownFields;
+  const mafOpps   = kf.mafDate
+    ? opps.filter(o => o[kf.mafDate] && (!ws || new Date(o[kf.mafDate]) >= ws))
+    : [];
+
+  const pipelineVal = openOpps.reduce((s,o) => s + (Number(o.Amount)||0), 0);
+
+  document.getElementById('kpi-open').textContent  = openOpps.length;
+  document.getElementById('kpi-won').textContent   = wonOpps.length;
+  document.getElementById('kpi-lost').textContent  = lostOpps.length;
+  document.getElementById('kpi-maf').textContent   = mafOpps.length || '—';
+  document.getElementById('kpi-value').textContent = fmtCurrency(pipelineVal);
+  document.getElementById('kpi-total').textContent = opps.length;
+}
+
+// ── Open Pipeline by Sub-Stage ────────────────────────────────────────────────
+function renderPipelineGrid(opps) {
+  const stages = [
+    { key:'e1', label:'Explore (E1)', color:'#4C9BE8' },
+    { key:'p1', label:'Propose (P1)', color:'#79c0ff' },
+    { key:'t1', label:'Trade (T1)',   color:'#e3b341' },
+    { key:'h1', label:'Handover (H1)',color:'#3fb950' },
+  ];
+
+  // Also catch un-matched open opps under "Other Open"
+  const buckets = { e1:[], p1:[], t1:[], h1:[], other:[] };
+  for (const o of opps) {
+    if (!isOpenOpp(o)) continue;
+    const ss = inferSubStage(o);
+    if      (matchStage(ss,'e1')) buckets.e1.push(o);
+    else if (matchStage(ss,'p1')) buckets.p1.push(o);
+    else if (matchStage(ss,'t1')) buckets.t1.push(o);
+    else if (matchStage(ss,'h1')) buckets.h1.push(o);
+    else                          buckets.other.push(o);
+  }
+
   const grid = document.getElementById('pipeline-grid');
   grid.innerHTML = '';
-  const sorted = Object.entries(byStage).sort((a,b) => b[1].count - a[1].count);
-  sorted.forEach(([stage, {count, value}]) => {
-    const colour = STAGE_COLOURS[stage] || '#8b949e';
-    const div = document.createElement('div');
-    div.className = 'card p-4';
-    div.innerHTML = `
-      <div class="text-xs font-semibold mb-2" style="color:${colour}">${stage}</div>
-      <div class="text-2xl font-bold mb-1">${count}</div>
-      <div class="text-xs" style="color:#8b949e">${fmtCurrency(value)}</div>
-    `;
-    grid.appendChild(div);
+
+  stages.forEach(({key,label,color}) => {
+    const items = buckets[key];
+    const val   = items.reduce((s,o) => s + (Number(o.Amount)||0), 0);
+    grid.innerHTML += `
+      <div class="card p-4">
+        <p class="text-xs mb-1" style="color:${color}">${label}</p>
+        <p class="text-2xl font-bold" style="color:${color}">${items.length}</p>
+        <p class="text-xs mt-1" style="color:#8b949e">${fmtCurrency(val)}</p>
+      </div>`;
   });
-  if (sorted.length === 0) {
-    grid.innerHTML = '<p class="col-span-full text-sm text-center py-4" style="color:#8b949e">No open pipeline</p>';
+
+  if (buckets.other.length) {
+    const val = buckets.other.reduce((s,o) => s + (Number(o.Amount)||0), 0);
+    grid.innerHTML += `
+      <div class="card p-4">
+        <p class="text-xs mb-1" style="color:#8b949e">Other Open</p>
+        <p class="text-2xl font-bold">${buckets.other.length}</p>
+        <p class="text-xs mt-1" style="color:#8b949e">${fmtCurrency(val)}</p>
+      </div>`;
   }
 }
 
-function renderAll() {
-  const label = _windowDays === 0 ? 'All Time' : 'L' + _windowDays;
-  document.getElementById('window-label').textContent = label;
+// ── Movement Volume chart (all transitions, no dedup) ─────────────────────────
+function renderVolumeChart(opps, histMap) {
+  const ws = windowStart();
+  const counts = { e1:0, p1:0, t1:0, h1:0 };
 
-  const m = computeMetrics(_opps, _history, _windowDays);
-  renderKPIs(m);
-  renderVolumeChart(m.volume);
-  renderVelocityChart(m.avgGaps);
-  renderLeaderboard(m.leaderboard);
-  renderPipeline(m.pipelineByStage);
+  for (const opp of opps) {
+    const hist = histMap[opp.Id] || [];
+    for (const h of hist) {
+      if (ws && new Date(h.date) < ws) continue;
+      const val = (h.newValue || '').toString();
+      if      (matchStage(val,'e1')) counts.e1++;
+      else if (matchStage(val,'p1')) counts.p1++;
+      else if (matchStage(val,'t1')) counts.t1++;
+      else if (matchStage(val,'h1')) counts.h1++;
+    }
+  }
+
+  const labels = ['→ E1 (Explore)','→ P1 (Propose)','→ T1 (Trade)','→ H1 (Handover)'];
+  const data   = [counts.e1, counts.p1, counts.t1, counts.h1];
+  const colors = ['#4C9BE8','#79c0ff','#e3b341','#3fb950'];
+
+  if (_volumeChart) _volumeChart.destroy();
+  const ctx = document.getElementById('volumeChart').getContext('2d');
+  _volumeChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets:[{ data, backgroundColor: colors, borderRadius:4 }] },
+    options: {
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ ticks:{ color:'#8b949e' }, grid:{ color:'#21262d' } },
+        y:{ ticks:{ color:'#8b949e' }, grid:{ color:'#21262d' }, beginAtZero:true }
+      }
+    }
+  });
 }
 
-// ============================================================================
-// Data loading
-// ============================================================================
+// ── Sales Velocity Engine chart ───────────────────────────────────────────────
+function renderVelocityChart(opps) {
+  const gaps = { leadToE1:[], e1ToP1:[], p1ToT1:[], t1ToH1:[] };
 
+  for (const o of opps) {
+    const g = getVelocityGaps(o);
+    if (g.leadToE1 != null) gaps.leadToE1.push(g.leadToE1);
+    if (g.e1ToP1   != null) gaps.e1ToP1.push(g.e1ToP1);
+    if (g.p1ToT1   != null) gaps.p1ToT1.push(g.p1ToT1);
+    if (g.t1ToH1   != null) gaps.t1ToH1.push(g.t1ToH1);
+  }
+
+  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : null;
+  const avgs = [
+    avg(gaps.leadToE1),
+    avg(gaps.e1ToP1),
+    avg(gaps.p1ToT1),
+    avg(gaps.t1ToH1),
+  ];
+
+  const labels = ['Lead→E1','E1→P1','P1→T1','T1→H1'];
+  const colors = avgs.map(v => {
+    if (v == null) return '#30363d';
+    const n = Number(v);
+    if (n > 14) return 'rgba(218,54,51,.8)';
+    if (n > 7)  return 'rgba(210,153,34,.8)';
+    return 'rgba(63,185,80,.8)';
+  });
+
+  if (_velocityChart) _velocityChart.destroy();
+  const ctx = document.getElementById('velocityChart').getContext('2d');
+  _velocityChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets:[{
+        data: avgs.map(v => v == null ? 0 : Number(v)),
+        backgroundColor: colors,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            label: ctx => avgs[ctx.dataIndex] == null
+              ? 'No data'
+              : avgs[ctx.dataIndex] + ' days avg (n=' +
+                [gaps.leadToE1,gaps.e1ToP1,gaps.p1ToT1,gaps.t1ToH1][ctx.dataIndex].length + ')'
+          }
+        }
+      },
+      scales:{
+        x:{ ticks:{ color:'#8b949e' }, grid:{ color:'#21262d' } },
+        y:{
+          ticks:{ color:'#8b949e', callback: v => v+'d' },
+          grid:{ color:'#21262d' },
+          beginAtZero:true
+        }
+      }
+    }
+  });
+}
+
+// ── Opps tables ───────────────────────────────────────────────────────────────
+function renderOppsList(sectionId, opps, opts) {
+  // opts: { dateField, dateLabel, stageField }
+  const kf = _knownFields;
+  const tbody = document.getElementById(sectionId + '-body');
+  const meta  = document.getElementById(sectionId + '-meta');
+  meta.textContent = opps.length + ' record' + (opps.length !== 1 ? 's' : '');
+
+  if (opps.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-xs" style="color:#8b949e">No records in this window</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = opps.map(o => {
+    const owner  = (o.Owner && o.Owner.Name) ? o.Owner.Name : (o.OwnerId || '—');
+    const emnr   = kf.emnr ? fmtCurrency(o[kf.emnr]) : '—';
+    const stage  = opts.stageField === 'sub'
+      ? inferSubStage(o) || o.StageName || '—'
+      : (o[opts.stageField] || o.StageName || '—');
+    const dateVal = opts.dateField === 'CreatedDate' ? o.CreatedDate : o[opts.dateField];
+    return `<tr style="border-bottom:1px solid #21262d">
+      <td class="py-2 px-3">${o.Name || '—'}</td>
+      <td class="py-2 px-3" style="color:#8b949e">${owner}</td>
+      <td class="py-2 px-3" style="color:#8b949e">${stage}</td>
+      <td class="py-2 px-3 text-right" style="color:#79c0ff">${emnr}</td>
+      <td class="py-2 px-3" style="color:#8b949e">${fmtDate(dateVal)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Leaderboard ───────────────────────────────────────────────────────────────
+function cellClass(v) {
+  if (v == null) return '';
+  if (v > 14)   return 'cell-red';
+  if (v > 7)    return 'cell-amber';
+  return '';
+}
+
+function fmtGap(v) { return v == null ? '—' : v + 'd'; }
+
+function renderLeaderboard(opps) {
+  const owners = {};
+  for (const o of opps) {
+    const name = (o.Owner && o.Owner.Name) ? o.Owner.Name : o.OwnerId || 'Unknown';
+    if (!owners[name]) owners[name] = { opps:0, won:0, gaps:{ leadToE1:[], e1ToP1:[], p1ToT1:[], t1ToH1:[] } };
+    owners[name].opps++;
+    if (WON_STAGES.includes(o.StageName)) owners[name].won++;
+    const g = getVelocityGaps(o);
+    if (g.leadToE1 != null) owners[name].gaps.leadToE1.push(g.leadToE1);
+    if (g.e1ToP1   != null) owners[name].gaps.e1ToP1.push(g.e1ToP1);
+    if (g.p1ToT1   != null) owners[name].gaps.p1ToT1.push(g.p1ToT1);
+    if (g.t1ToH1   != null) owners[name].gaps.t1ToH1.push(g.t1ToH1);
+  }
+
+  const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+  const rows = Object.entries(owners)
+    .sort((a,b) => b[1].opps - a[1].opps)
+    .map(([name, d]) => {
+      const le = avg(d.gaps.leadToE1);
+      const ep = avg(d.gaps.e1ToP1);
+      const pt = avg(d.gaps.p1ToT1);
+      const th = avg(d.gaps.t1ToH1);
+      return `<tr style="border-bottom:1px solid #21262d">
+        <td class="py-2 px-3 font-medium">${name}</td>
+        <td class="py-2 px-3 text-center">${d.opps}</td>
+        <td class="py-2 px-3 text-center" style="color:#3fb950">${d.won}</td>
+        <td class="py-2 px-3 text-center ${cellClass(le)}">${fmtGap(le)}</td>
+        <td class="py-2 px-3 text-center ${cellClass(ep)}">${fmtGap(ep)}</td>
+        <td class="py-2 px-3 text-center ${cellClass(pt)}">${fmtGap(pt)}</td>
+        <td class="py-2 px-3 text-center ${cellClass(th)}">${fmtGap(th)}</td>
+      </tr>`;
+    });
+
+  document.getElementById('leaderboard-body').innerHTML = rows.join('') || `
+    <tr><td colspan="7" class="py-6 text-center text-xs" style="color:#8b949e">No data</td></tr>`;
+}
+
+// ── Section toggle ────────────────────────────────────────────────────────────
+const _sectionOpen = { created:true, won:true, lost:true };
+
+function toggleSection(id) {
+  _sectionOpen[id] = !_sectionOpen[id];
+  document.getElementById('body-' + id).style.display = _sectionOpen[id] ? '' : 'none';
+  document.getElementById('chev-' + id).style.transform =
+    _sectionOpen[id] ? '' : 'rotate(-90deg)';
+}
+
+// ── Window toggle ─────────────────────────────────────────────────────────────
+function setWindow(days, btn) {
+  _windowDays = days;
+  document.querySelectorAll('.toggle-pill button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('window-label').textContent =
+    days === 0 ? 'All Time' : 'L' + days;
+  renderAll();
+}
+
+// ── Master render ─────────────────────────────────────────────────────────────
+function renderAll() {
+  const noram   = _opps.filter(isNORAM);
+  const histMap = buildHistMap();
+  const ws      = windowStart();
+
+  // Created: in window by CreatedDate
+  const created = noram.filter(o => inWindow(o.CreatedDate))
+    .sort((a,b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
+
+  // Won: in window by CloseDate
+  const won = noram.filter(o => WON_STAGES.includes(o.StageName) &&
+                                (!ws || new Date(o.CloseDate) >= ws))
+    .sort((a,b) => new Date(b.CloseDate) - new Date(a.CloseDate));
+
+  // Lost: in window by CloseDate
+  const lost = noram.filter(o => LOST_STAGES.includes(o.StageName) &&
+                                 (!ws || new Date(o.CloseDate) >= ws))
+    .sort((a,b) => new Date(b.CloseDate) - new Date(a.CloseDate));
+
+  renderKPIs(noram);
+  renderPipelineGrid(noram);
+  renderVolumeChart(noram, histMap);
+  renderVelocityChart(noram);
+
+  renderOppsList('created', created, { dateField:'CreatedDate', stageField:'sub' });
+  renderOppsList('won',     won,     { dateField:'CloseDate',   stageField:'StageName' });
+  renderOppsList('lost',    lost,    { dateField:'CloseDate',   stageField:'StageName' });
+  renderLeaderboard(noram);
+}
+
+// ── Error display ─────────────────────────────────────────────────────────────
+function showError(msg) {
+  document.getElementById('loading').style.display    = 'none';
+  document.getElementById('error-msg').textContent    = msg;
+  document.getElementById('error-box').classList.remove('hidden');
+}
+
+// ── Load data via google.script.run ──────────────────────────────────────────
 function loadData() {
+  document.getElementById('loading').style.display = 'flex';
   document.getElementById('loading').classList.remove('hidden');
-  document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('error-box').classList.add('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
 
   google.script.run
     .withSuccessHandler(function(jsonStr) {
       try {
-        const data = JSON.parse(jsonStr);
-        _knownFields = data.knownFields || {};
-        _opps    = (data.opportunities || []).filter(isNORAM);
-        _history = data.fieldHistory || [];
+        const data   = JSON.parse(jsonStr);
+        _opps        = data.opportunities || [];
+        _history     = data.fieldHistory   || [];
+        _knownFields = data.knownFields    || {};
+
         document.getElementById('fetch-stamp').textContent =
-          'Last updated: ' + new Date(data.fetchedAt).toLocaleString() +
-          ' · ' + _opps.length + ' NORAM opportunities';
-        renderAll();
-        document.getElementById('loading').classList.add('hidden');
+          'Fetched ' + new Date(data.fetchedAt).toLocaleString() +
+          ' · ' + _opps.length + ' opps loaded';
+
+        document.getElementById('loading').style.display = 'none';
         document.getElementById('dashboard').classList.remove('hidden');
+
+        renderAll();
       } catch(e) {
-        showError('Failed to parse data: ' + e.message);
+        showError('JSON parse error: ' + e.message + '\n\n' + jsonStr.substring(0,300));
       }
     })
     .withFailureHandler(function(err) {
@@ -462,23 +655,9 @@ function loadData() {
     .getSalesforceData();
 }
 
-function showError(msg) {
-  document.getElementById('loading').classList.add('hidden');
-  document.getElementById('error-msg').textContent = msg;
-  document.getElementById('error-box').classList.remove('hidden');
-}
-
-function setWindow(days, btn) {
-  _windowDays = days;
-  document.querySelectorAll('.toggle-pill button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  if (_opps.length) renderAll();
-}
-
-// ============================================================================
-// Boot
-// ============================================================================
+// ── Boot ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', loadData);
+
 </script>
 </body>
 </html>
