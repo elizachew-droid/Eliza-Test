@@ -123,7 +123,7 @@
 // ============================================================================
 // State
 // ============================================================================
-let _opps = [], _history = [], _windowDays = 30;
+let _opps = [], _history = [], _windowDays = 30, _knownFields = {};
 let _volumeChart, _velocityChart;
 
 // ============================================================================
@@ -173,6 +173,14 @@ function buildHistMap(history) {
   return map;
 }
 
+// Infer current sub-stage from the most recent field history entry
+function inferSubStage(histMap, oppId) {
+  const hist = histMap[oppId] || [];
+  if (!hist.length) return null;
+  const last = hist[hist.length - 1];
+  return last.NewValue || null;
+}
+
 function firstStageDate(histMap, oppId, tokens) {
   const hist = histMap[oppId] || [];
   const match = hist.find(h => matchesStage(h.NewValue, tokens));
@@ -204,10 +212,10 @@ function computeMetrics(opps, history, windowDays) {
       id:      opp.Id,
       owner:   (opp.Owner || {}).Name || 'Unknown',
       stage:   opp.StageName || '',
-      subStage:opp.Sub_Stage__c || '',
+      subStage:opp[_knownFields.subStage] || inferSubStage(histMap, opp.Id) || '—',
       amount:  opp.Amount || 0,
       closeDate: opp.CloseDate,
-      mafDate: opp.Date_MAF_Submitted_By_Merchant__c,
+      mafDate: opp[_knownFields.mafDate] || null,
       gaps: {
         'Lead→E1': daysBetween(created, e1),
         'E1→P1':   daysBetween(e1, p1),
@@ -435,7 +443,8 @@ function loadData() {
     .withSuccessHandler(function(jsonStr) {
       try {
         const data = JSON.parse(jsonStr);
-        _opps    = (data.opportunities || []).filter(isNORAM); // client-side validation
+        _knownFields = data.knownFields || {};
+        _opps    = (data.opportunities || []).filter(isNORAM);
         _history = data.fieldHistory || [];
         document.getElementById('fetch-stamp').textContent =
           'Last updated: ' + new Date(data.fetchedAt).toLocaleString() +
