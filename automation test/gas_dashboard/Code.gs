@@ -68,7 +68,7 @@ function getSalesforceData() {
 // Fields we'd like to use but that may not exist in every org.
 // Maps our internal key → array of candidate API names to try (first match wins).
 const OPTIONAL_FIELDS = {
-  subStage:   ['Sub_Stage__c', 'Sub_Stages__c', 'SubStage__c', 'Stage_Detail__c'],
+  subStage:   ['Sub_Stages__c', 'Sub_Stage__c', 'SubStage__c', 'Stage_Detail__c'],
   mafDate:    ['Date_MAF_Submitted_By_Merchant__c', 'MAF_Submitted_Date__c', 'MAF_Date__c'],
   territory:  ['Account_Territory__c', 'Territory__c'],
   ownerTerritory: ['Record_Owner_Sales_Territory__c', 'Owner_Sales_Territory__c'],
@@ -148,9 +148,12 @@ function fetchOpportunities_(instanceUrl, accessToken, knownFields) {
 function fetchFieldHistory_(instanceUrl, accessToken, oppIds, knownFields) {
   if (!oppIds || oppIds.length === 0) return [];
 
-  // Build the field name list for the WHERE clause
-  const fieldNames = ["'StageName'", "'Sub-Stages'"];
-  if (knownFields.subStage) fieldNames.push("'" + knownFields.subStage + "'");
+  // 'Sub-Stages' is the value stored in OpportunityFieldHistory.Field for this org.
+  // Include the API name too in case the org stores it differently.
+  const fieldNames = ["'Sub-Stages'", "'StageName'"];
+  if (knownFields.subStage && fieldNames.indexOf("'" + knownFields.subStage + "'") === -1) {
+    fieldNames.push("'" + knownFields.subStage + "'");
+  }
 
   const allHistory = [];
   const batchSize  = 400;
