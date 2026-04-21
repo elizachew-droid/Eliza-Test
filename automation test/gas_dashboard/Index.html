@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NORAM Sales Velocity Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  body { background:#0d1117; color:#e6edf3; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+  .card { background:#161b22; border:1px solid #30363d; border-radius:10px; }
+  .badge-red    { background:rgba(218,54,51,.18); color:#f85149; border:1px solid rgba(218,54,51,.3); }
+  .badge-green  { background:rgba(46,164,79,.18);  color:#3fb950; border:1px solid rgba(46,164,79,.3);  }
+  .badge-yellow { background:rgba(210,153,34,.18); color:#e3b341; border:1px solid rgba(210,153,34,.3); }
+  .badge-blue   { background:rgba(76,155,232,.18); color:#79c0ff; border:1px solid rgba(76,155,232,.3); }
+  .cell-red   { background:rgba(218,54,51,.2)  !important; color:#f85149; font-weight:600; }
+  .cell-amber { background:rgba(210,153,34,.15)!important; color:#e3b341; font-weight:600; }
+  .toggle-pill { background:#21262d; border:1px solid #30363d; border-radius:20px; padding:4px; display:inline-flex; gap:2px; }
+  .toggle-pill button { border-radius:16px; padding:4px 14px; font-size:12px; font-weight:600; transition:all .15s; color:#8b949e; }
+  .toggle-pill button.active { background:#4C9BE8; color:#fff; }
+  ::-webkit-scrollbar { width:4px; height:4px; } ::-webkit-scrollbar-track { background:#161b22; } ::-webkit-scrollbar-thumb { background:#30363d; border-radius:4px; }
+  th { position:sticky; top:0; background:#161b22; z-index:1; }
+  .spinner { width:36px; height:36px; border:3px solid #30363d; border-top-color:#4C9BE8; border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body class="min-h-screen p-6">
+
+<!-- Loading overlay -->
+<div id="loading" class="fixed inset-0 flex flex-col items-center justify-center z-50" style="background:#0d1117">
+  <div class="spinner mb-4"></div>
+  <p class="text-sm" style="color:#8b949e">Pulling NORAM data from Salesforce…</p>
+</div>
+
+<!-- Error overlay -->
+<div id="error-box" class="hidden fixed inset-0 flex items-center justify-center z-50 p-8" style="background:#0d1117">
+  <div class="card p-8 max-w-lg w-full">
+    <h2 class="text-red-400 font-bold mb-3 text-lg">Connection Error</h2>
+    <pre id="error-msg" class="text-sm whitespace-pre-wrap" style="color:#8b949e"></pre>
+    <button onclick="loadData()" class="mt-5 px-4 py-2 rounded text-sm font-semibold" style="background:#4C9BE8;color:#fff">Retry</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="hidden max-w-screen-2xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-xl font-bold">NORAM Sales Velocity Dashboard</h1>
+      <p class="text-sm mt-1" id="fetch-stamp" style="color:#8b949e"></p>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <div class="toggle-pill">
+        <button id="btn-l30" class="active" onclick="setWindow(30,this)">L30</button>
+        <button id="btn-l90" onclick="setWindow(90,this)">L90</button>
+        <button id="btn-all" onclick="setWindow(0,this)">All Time</button>
+      </div>
+      <button onclick="loadData()" class="px-3 py-1.5 rounded text-xs font-semibold" style="background:#21262d;border:1px solid #30363d;color:#8b949e">↻ Refresh</button>
+    </div>
+  </div>
+
+  <!-- KPI row -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+    <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">OPEN PIPELINE</p><p class="text-2xl font-bold" id="kpi-open">—</p></div>
+    <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">WON / LIVE</p><p class="text-2xl font-bold" style="color:#3fb950" id="kpi-won">—</p></div>
+    <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">LOST / DQ</p><p class="text-2xl font-bold" style="color:#f85149" id="kpi-lost">—</p></div>
+    <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">MAF SUBMITTED</p><p class="text-2xl font-bold" style="color:#e3b341" id="kpi-maf">—</p></div>
+    <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">PIPELINE VALUE</p><p class="text-2xl font-bold" style="color:#79c0ff" id="kpi-value">—</p></div>
+    <div class="card p-4"><p class="text-xs mb-1" style="color:#8b949e">TOTAL NORAM</p><p class="text-2xl font-bold" id="kpi-total">—</p></div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+
+    <!-- Movement Volume -->
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold mb-1" style="color:#8b949e">MOVEMENT VOLUME <span id="window-label" class="badge-blue px-2 py-0.5 rounded text-xs ml-1">L30</span></h2>
+      <p class="text-xs mb-4" style="color:#30363d">Unique opportunity movements into each stage</p>
+      <canvas id="volumeChart" style="max-height:240px"></canvas>
+    </div>
+
+    <!-- Velocity Engine -->
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold mb-1" style="color:#8b949e">SALES VELOCITY ENGINE</h2>
+      <p class="text-xs mb-4" style="color:#30363d">Average calendar days between stage transitions</p>
+      <canvas id="velocityChart" style="max-height:240px"></canvas>
+    </div>
+
+  </div>
+
+  <!-- Owner Leaderboard -->
+  <div class="card p-5 mb-6">
+    <h2 class="text-sm font-semibold mb-1" style="color:#8b949e">OWNER LEADERBOARD</h2>
+    <p class="text-xs mb-4" style="color:#30363d">Average gap days per stage transition · <span class="cell-red px-1 rounded">red</span> = &gt;14 days · <span class="cell-amber px-1 rounded">amber</span> = 8–14 days</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr style="border-bottom:1px solid #30363d">
+            <th class="text-left py-2 px-3 text-xs font-semibold" style="color:#8b949e">Owner</th>
+            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">Opps</th>
+            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#3fb950">Won</th>
+            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">Lead→E1</th>
+            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">E1→P1</th>
+            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">P1→T1</th>
+            <th class="text-center py-2 px-3 text-xs font-semibold" style="color:#8b949e">T1→H1</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Open Pipeline -->
+  <div class="card p-5 mb-6">
+    <h2 class="text-sm font-semibold mb-4" style="color:#8b949e">OPEN PIPELINE BY SUB-STAGE</h2>
+    <div id="pipeline-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+  </div>
+
+</div><!-- /dashboard -->
+
+<script>
+// ============================================================================
+// State
+// ============================================================================
+let _opps = [], _history = [], _windowDays = 30;
+let _volumeChart, _velocityChart;
+
+// ============================================================================
+// NORAM filter  (client-side validation matching server SOQL)
+// ============================================================================
+function isNORAM(opp) {
+  if (opp.Type !== 'New Business') return false;
+  const t1 = (opp.Account_Territory__c || '').includes('NORAM');
+  const t2 = (opp.Record_Owner_Sales_Territory__c || '').includes('NORAM');
+  const t3 = (opp.Second_Opp_Owner_Sales_Territory__c || '').includes('NORAM');
+  const t4 = opp.Acquiring_Channel__c === 'CRB(US)';
+  return t1 || t2 || t3 || t4;
+}
+
+// ============================================================================
+// Stage matching helpers
+// ============================================================================
+const STAGE_VALUES = {
+  E1: ['e1','explore'],
+  P1: ['p1','propose'],
+  T1: ['t1','trade'],
+  H1: ['h1','handover'],
+};
+const STAGE_PAIRS = [
+  { key:'Lead→E1', from:null,   to:STAGE_VALUES.E1 },
+  { key:'E1→P1',  from:STAGE_VALUES.E1, to:STAGE_VALUES.P1 },
+  { key:'P1→T1',  from:STAGE_VALUES.P1, to:STAGE_VALUES.T1 },
+  { key:'T1→H1',  from:STAGE_VALUES.T1, to:STAGE_VALUES.H1 },
+];
+
+function matchesStage(val, tokens) {
+  if (!val || !tokens) return false;
+  const v = val.toLowerCase();
+  return tokens.some(t => v.includes(t));
+}
+
+// Build a map { oppId → sorted history[] }
+function buildHistMap(history) {
+  const map = {};
+  history.forEach(h => {
+    if (!map[h.OpportunityId]) map[h.OpportunityId] = [];
+    map[h.OpportunityId].push(h);
+  });
+  Object.values(map).forEach(arr =>
+    arr.sort((a,b) => new Date(a.CreatedDate) - new Date(b.CreatedDate))
+  );
+  return map;
+}
+
+function firstStageDate(histMap, oppId, tokens) {
+  const hist = histMap[oppId] || [];
+  const match = hist.find(h => matchesStage(h.NewValue, tokens));
+  return match ? new Date(match.CreatedDate) : null;
+}
+
+function daysBetween(d1, d2) {
+  if (!d1 || !d2) return null;
+  const diff = Math.round((d2 - d1) / 86400000);
+  return diff >= 0 ? diff : null;
+}
+
+// ============================================================================
+// Metrics computation
+// ============================================================================
+function computeMetrics(opps, history, windowDays) {
+  const now    = new Date();
+  const cutoff = windowDays > 0 ? new Date(now - windowDays * 86400000) : new Date(0);
+  const histMap = buildHistMap(history);
+
+  // Velocity data per opp
+  const velocityRows = opps.map(opp => {
+    const created = new Date(opp.CreatedDate);
+    const e1 = firstStageDate(histMap, opp.Id, STAGE_VALUES.E1);
+    const p1 = firstStageDate(histMap, opp.Id, STAGE_VALUES.P1);
+    const t1 = firstStageDate(histMap, opp.Id, STAGE_VALUES.T1);
+    const h1 = firstStageDate(histMap, opp.Id, STAGE_VALUES.H1);
+    return {
+      id:      opp.Id,
+      owner:   (opp.Owner || {}).Name || 'Unknown',
+      stage:   opp.StageName || '',
+      subStage:opp.Sub_Stage__c || '',
+      amount:  opp.Amount || 0,
+      closeDate: opp.CloseDate,
+      mafDate: opp.Date_MAF_Submitted_By_Merchant__c,
+      gaps: {
+        'Lead→E1': daysBetween(created, e1),
+        'E1→P1':   daysBetween(e1, p1),
+        'P1→T1':   daysBetween(p1, t1),
+        'T1→H1':   daysBetween(t1, h1),
+      }
+    };
+  });
+
+  // Movement Volume: unique opps moving into each stage within window
+  const volumeSeen = {};
+  const volume = { E1:0, P1:0, T1:0, H1:0, MAF:0 };
+  history.forEach(h => {
+    if (new Date(h.CreatedDate) < cutoff) return;
+    for (const [stage, tokens] of Object.entries(STAGE_VALUES)) {
+      if (matchesStage(h.NewValue, tokens)) {
+        const k = h.OpportunityId + '_' + stage;
+        if (!volumeSeen[k]) { volumeSeen[k] = true; volume[stage]++; }
+      }
+    }
+  });
+  opps.forEach(o => {
+    if (o.Date_MAF_Submitted_By_Merchant__c) {
+      if (new Date(o.Date_MAF_Submitted_By_Merchant__c) >= cutoff) volume.MAF++;
+    }
+  });
+
+  // Won/Live, Lost/DQ (by CloseDate in window)
+  const WON_STAGES  = ['closed won','live'];
+  const LOST_STAGES = ['merchant lost','disqualified'];
+  let wonCount=0, lostCount=0, mafCount=volume.MAF;
+
+  opps.forEach(o => {
+    const stage = (o.StageName || '').toLowerCase();
+    const cd    = o.CloseDate ? new Date(o.CloseDate) : null;
+    const inWindow = !cd || cd >= cutoff;
+    if (WON_STAGES.includes(stage)  && inWindow) wonCount++;
+    if (LOST_STAGES.includes(stage) && inWindow) lostCount++;
+  });
+
+  // Open pipeline
+  const openStages = ['closed won','live','merchant lost','disqualified','closed lost'];
+  const openOpps   = opps.filter(o => !openStages.includes((o.StageName||'').toLowerCase()));
+  const pipelineByStage = {};
+  openOpps.forEach(o => {
+    const s = o.Sub_Stage__c || o.StageName || 'Unknown';
+    if (!pipelineByStage[s]) pipelineByStage[s] = { count:0, value:0 };
+    pipelineByStage[s].count++;
+    pipelineByStage[s].value += o.Amount || 0;
+  });
+
+  const pipelineValue = openOpps.reduce((s,o) => s + (o.Amount||0), 0);
+
+  // Avg velocity (global)
+  const avgGaps = {};
+  STAGE_PAIRS.forEach(({key}) => {
+    const vals = velocityRows.map(r => r.gaps[key]).filter(v => v !== null);
+    avgGaps[key] = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
+  });
+
+  // Per-owner leaderboard
+  const ownerMap = {};
+  velocityRows.forEach(r => {
+    if (!ownerMap[r.owner]) {
+      ownerMap[r.owner] = { owner:r.owner, count:0, won:0, gapSums:{}, gapCounts:{} };
+      STAGE_PAIRS.forEach(({key}) => { ownerMap[r.owner].gapSums[key]=0; ownerMap[r.owner].gapCounts[key]=0; });
+    }
+    const o = ownerMap[r.owner];
+    o.count++;
+    if (WON_STAGES.includes(r.stage.toLowerCase())) o.won++;
+    STAGE_PAIRS.forEach(({key}) => {
+      if (r.gaps[key] !== null) { o.gapSums[key] += r.gaps[key]; o.gapCounts[key]++; }
+    });
+  });
+  const leaderboard = Object.values(ownerMap).map(o => ({
+    owner: o.owner,
+    count: o.count,
+    won:   o.won,
+    avgs:  Object.fromEntries(
+      STAGE_PAIRS.map(({key}) => [key, o.gapCounts[key] > 0
+        ? Math.round(o.gapSums[key] / o.gapCounts[key]) : null])
+    )
+  })).sort((a,b) => b.count - a.count);
+
+  return { volume, wonCount, lostCount, mafCount, pipelineValue,
+           openOpps, pipelineByStage, avgGaps, leaderboard };
+}
+
+// ============================================================================
+// Render
+// ============================================================================
+
+function fmtCurrency(v) {
+  if (v >= 1e9) return '$' + (v/1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return '$' + (v/1e3).toFixed(0) + 'K';
+  return '$' + v.toFixed(0);
+}
+
+function renderKPIs(m) {
+  const openOpps = _opps.filter(o => {
+    const s = (o.StageName||'').toLowerCase();
+    return !['closed won','live','merchant lost','disqualified','closed lost'].includes(s);
+  });
+  document.getElementById('kpi-open').textContent  = openOpps.length;
+  document.getElementById('kpi-won').textContent   = m.wonCount;
+  document.getElementById('kpi-lost').textContent  = m.lostCount;
+  document.getElementById('kpi-maf').textContent   = m.mafCount;
+  document.getElementById('kpi-value').textContent = fmtCurrency(m.pipelineValue);
+  document.getElementById('kpi-total').textContent = _opps.length;
+}
+
+function renderVolumeChart(volume) {
+  const labels = ['E1 — Explore','P1 — Propose','T1 — Trade','H1 — Handover','MAF Submitted'];
+  const data   = [volume.E1, volume.P1, volume.T1, volume.H1, volume.MAF];
+  const colours = ['#4C9BE8','#E8834C','#4CE8A0','#B04CE8','#E8D44C'];
+
+  if (_volumeChart) _volumeChart.destroy();
+  _volumeChart = new Chart(document.getElementById('volumeChart'), {
+    type:'bar',
+    data:{ labels, datasets:[{ data, backgroundColor:colours, borderRadius:5, borderSkipped:false }] },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: c => ' ' + c.parsed.y + ' movements' } } },
+      scales:{
+        x:{ grid:{display:false}, ticks:{ color:'#e6edf3', font:{size:11} } },
+        y:{ grid:{ color:'#30363d' }, ticks:{ color:'#8b949e', precision:0 } }
+      }
+    }
+  });
+}
+
+function renderVelocityChart(avgGaps) {
+  const labels   = Object.keys(avgGaps);
+  const data     = Object.values(avgGaps);
+  const colours  = data.map(v => v > 14 ? '#f85149' : v > 7 ? '#e3b341' : '#3fb950');
+
+  if (_velocityChart) _velocityChart.destroy();
+  _velocityChart = new Chart(document.getElementById('velocityChart'), {
+    type:'bar',
+    data:{ labels, datasets:[{ data, backgroundColor:colours, borderRadius:5, borderSkipped:false, indexAxis:'y' }] },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:true,
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: c => ' ' + c.parsed.x + ' avg days' } } },
+      scales:{
+        x:{ grid:{ color:'#30363d' }, ticks:{ color:'#8b949e' } },
+        y:{ grid:{ display:false }, ticks:{ color:'#e6edf3', font:{size:12} } }
+      }
+    }
+  });
+}
+
+function renderLeaderboard(rows) {
+  const tbody = document.getElementById('leaderboard-body');
+  tbody.innerHTML = '';
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #30363d';
+    function gapCell(v) {
+      if (v === null) return `<td class="text-center py-2 px-3" style="color:#30363d">—</td>`;
+      const cls = v > 14 ? 'cell-red' : v > 7 ? 'cell-amber' : '';
+      return `<td class="text-center py-2 px-3 rounded ${cls}">${v}d</td>`;
+    }
+    tr.innerHTML = `
+      <td class="py-2 px-3 font-medium">${row.owner}</td>
+      <td class="text-center py-2 px-3" style="color:#8b949e">${row.count}</td>
+      <td class="text-center py-2 px-3" style="color:#3fb950">${row.won}</td>
+      ${STAGE_PAIRS.map(({key}) => gapCell(row.avgs[key])).join('')}
+    `;
+    tbody.appendChild(tr);
+  });
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6" style="color:#8b949e">No data</td></tr>';
+  }
+}
+
+function renderPipeline(byStage) {
+  const STAGE_COLOURS = {
+    'E1':     '#4C9BE8', 'Explore': '#4C9BE8',
+    'P1':     '#E8834C', 'Propose': '#E8834C',
+    'T1':     '#4CE8A0', 'Trade':   '#4CE8A0',
+    'H1':     '#B04CE8', 'Handover':'#B04CE8',
+  };
+  const grid = document.getElementById('pipeline-grid');
+  grid.innerHTML = '';
+  const sorted = Object.entries(byStage).sort((a,b) => b[1].count - a[1].count);
+  sorted.forEach(([stage, {count, value}]) => {
+    const colour = STAGE_COLOURS[stage] || '#8b949e';
+    const div = document.createElement('div');
+    div.className = 'card p-4';
+    div.innerHTML = `
+      <div class="text-xs font-semibold mb-2" style="color:${colour}">${stage}</div>
+      <div class="text-2xl font-bold mb-1">${count}</div>
+      <div class="text-xs" style="color:#8b949e">${fmtCurrency(value)}</div>
+    `;
+    grid.appendChild(div);
+  });
+  if (sorted.length === 0) {
+    grid.innerHTML = '<p class="col-span-full text-sm text-center py-4" style="color:#8b949e">No open pipeline</p>';
+  }
+}
+
+function renderAll() {
+  const label = _windowDays === 0 ? 'All Time' : 'L' + _windowDays;
+  document.getElementById('window-label').textContent = label;
+
+  const m = computeMetrics(_opps, _history, _windowDays);
+  renderKPIs(m);
+  renderVolumeChart(m.volume);
+  renderVelocityChart(m.avgGaps);
+  renderLeaderboard(m.leaderboard);
+  renderPipeline(m.pipelineByStage);
+}
+
+// ============================================================================
+// Data loading
+// ============================================================================
+
+function loadData() {
+  document.getElementById('loading').classList.remove('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('error-box').classList.add('hidden');
+
+  google.script.run
+    .withSuccessHandler(function(jsonStr) {
+      try {
+        const data = JSON.parse(jsonStr);
+        _opps    = (data.opportunities || []).filter(isNORAM); // client-side validation
+        _history = data.fieldHistory || [];
+        document.getElementById('fetch-stamp').textContent =
+          'Last updated: ' + new Date(data.fetchedAt).toLocaleString() +
+          ' · ' + _opps.length + ' NORAM opportunities';
+        renderAll();
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+      } catch(e) {
+        showError('Failed to parse data: ' + e.message);
+      }
+    })
+    .withFailureHandler(function(err) {
+      showError(err.message || String(err));
+    })
+    .getSalesforceData();
+}
+
+function showError(msg) {
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-box').classList.remove('hidden');
+}
+
+function setWindow(days, btn) {
+  _windowDays = days;
+  document.querySelectorAll('.toggle-pill button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (_opps.length) renderAll();
+}
+
+// ============================================================================
+// Boot
+// ============================================================================
+window.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>
