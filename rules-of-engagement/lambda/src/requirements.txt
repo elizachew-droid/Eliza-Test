@@ -1,0 +1,3 @@
+# No third-party dependencies — all HTTP calls use urllib from the standard library.
+# boto3 is provided by the Lambda Python 3.12 runtime.
+# If you add any pip packages here, update build.sh to install them into the zip.
