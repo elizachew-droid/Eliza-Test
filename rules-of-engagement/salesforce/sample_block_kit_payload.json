@@ -1,0 +1,123 @@
+{
+  "blocks": [
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "text": ":warning: Rules of Engagement — Stale Accounts Review",
+        "emoji": true
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "The following accounts have been flagged as stale this month. Please review and choose *DROP* or *KEEP* for each one by *EOD Friday*.\n\n*DROP* — transfers ownership to Sales Operations\n*KEEP* — clears the stale flag, account stays with current owner"
+      }
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Acme Corp*\nOwner: <@U012AB3CD> (Jane Smith)\nLast Activity: 2024-11-01\nRegion: NORAM"
+      }
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": ":wastebasket: DROP",
+            "emoji": true
+          },
+          "style": "danger",
+          "action_id": "drop_account",
+          "value": "001XXXXXXXXXXXXXXX",
+          "confirm": {
+            "title": { "type": "plain_text", "text": "Drop this account?" },
+            "text": {
+              "type": "mrkdwn",
+              "text": "Ownership will be transferred to *Sales Operations*. Are you sure?"
+            },
+            "confirm": { "type": "plain_text", "text": "Yes, drop it" },
+            "deny": { "type": "plain_text", "text": "Cancel" }
+          }
+        },
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": ":white_check_mark: KEEP",
+            "emoji": true
+          },
+          "style": "primary",
+          "action_id": "keep_account",
+          "value": "001XXXXXXXXXXXXXXX"
+        }
+      ]
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Globex Industries*\nOwner: <@U034EF5GH> (Bob Jones)\nLast Activity: 2024-10-15\nRegion: NORAM"
+      }
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": ":wastebasket: DROP",
+            "emoji": true
+          },
+          "style": "danger",
+          "action_id": "drop_account",
+          "value": "001YYYYYYYYYYYYYYY",
+          "confirm": {
+            "title": { "type": "plain_text", "text": "Drop this account?" },
+            "text": {
+              "type": "mrkdwn",
+              "text": "Ownership will be transferred to *Sales Operations*. Are you sure?"
+            },
+            "confirm": { "type": "plain_text", "text": "Yes, drop it" },
+            "deny": { "type": "plain_text", "text": "Cancel" }
+          }
+        },
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": ":white_check_mark: KEEP",
+            "emoji": true
+          },
+          "style": "primary",
+          "action_id": "keep_account",
+          "value": "001YYYYYYYYYYYYYYY"
+        }
+      ]
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "Automated by Rules of Engagement | Salesforce report: Stale Accounts | Questions? Contact Sales Ops"
+        }
+      ]
+    }
+  ]
+}
