@@ -4,6 +4,12 @@ variable "aws_region" {
   default     = "eu-west-1"
 }
 
+variable "aws_profile" {
+  description = "AWS CLI profile name (from aws configure sso). Override via -var or AWS_PROFILE env var."
+  type        = string
+  default     = "checkout-prod"
+}
+
 variable "environment" {
   description = "Deployment environment (e.g. prod, staging)"
   type        = string
